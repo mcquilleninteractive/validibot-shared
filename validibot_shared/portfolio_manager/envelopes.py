@@ -34,11 +34,6 @@ PORTFOLIO_MANAGER_PROPERTY_RESULTS_SCHEMA_VERSION = (
 )
 
 PortfolioManagerSubmissionStructure = Literal["single_report", "zip_collection"]
-PortfolioManagerProfile = Literal[
-    "generic",
-    "benchmark_readiness",
-    "washington_cbps_tier1_euit",
-]
 PortfolioManagerIdKind = Literal[
     "property_id",
     "parent_property_id",
@@ -176,7 +171,6 @@ class PortfolioManagerInputs(BaseModel):
     """Resolved author configuration and defensive backend limits."""
 
     submission_structure: PortfolioManagerSubmissionStructure = "single_report"
-    profile: PortfolioManagerProfile = "generic"
     default_euit_kbtu_ft2_yr: Decimal | None = Field(default=None, gt=0)
     compare_to_euit: bool = False
     near_target_percent: Decimal = Field(default=Decimal("10"), ge=0, le=100)
@@ -211,33 +205,6 @@ class PortfolioManagerInputs(BaseModel):
     max_findings: int = Field(default=1_000, gt=0, le=10_000)
 
     model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def validate_profile_contract(self) -> PortfolioManagerInputs:
-        """Profiles apply explicit minimum behavior without hidden generated CEL."""
-        if self.profile == "washington_cbps_tier1_euit":
-            self.require_complete_reporting_period = True
-            if self.maximum_reporting_period_age_months is None:
-                self.maximum_reporting_period_age_months = 24
-            self.require_benchmark_ready = True
-            self.require_form_c_ready = True
-            self.require_weather_normalized_site_eui = True
-            self.require_washington_standard_id = True
-            self.meter_less_than_12_months_policy = "error"
-            self.meter_gap_policy = "error"
-            self.meter_overlap_policy = "error"
-            self.no_meters_selected_policy = "error"
-            self.long_meter_entry_policy = "error"
-            self.estimated_energy_policy = "warning"
-            self.other_alert_policy = "warning"
-        elif self.profile == "benchmark_readiness":
-            self.require_complete_reporting_period = True
-            self.require_benchmark_ready = True
-        if self.compare_to_euit and self.default_euit_kbtu_ft2_yr is None:
-            # An EBL may still provide every target, so execution performs the
-            # definitive per-property coverage check.
-            return self
-        return self
 
 
 class PortfolioManagerFinding(BaseModel):
@@ -347,7 +314,6 @@ class PortfolioManagerOutputs(BaseModel):
     """Domain outputs and CEL-visible scalar facts returned by the backend."""
 
     submission_structure: PortfolioManagerSubmissionStructure
-    profile: PortfolioManagerProfile
     file_count: int = Field(ge=0)
     valid_file_count: int = Field(ge=0)
     invalid_file_count: int = Field(ge=0)

@@ -1,4 +1,4 @@
-"""Evidence-manifest schemas (``validibot.evidence.vN``).
+"""Evidence-manifest schema (``validibot.evidence.v1``).
 
 Public API for both the Validibot Django app (which generates
 manifests when validation runs complete) and the Pro / external

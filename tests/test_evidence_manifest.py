@@ -20,7 +20,8 @@ What this file covers
    hashes and stable IDs are allowed; private storage URIs are not part
    of the public schema.
 6. Attempt-bound execution evidence records canonical envelopes, verified
-   input identities, and explicit preprocessing relationships without URIs.
+   input identities, preprocessing relationships, and complete managed-release
+   identity without URIs.
 """
 
 from __future__ import annotations
@@ -353,6 +354,68 @@ class TestExecutionAttemptEvidence:
                 size_bytes=-1,
                 sha256="not-a-sha256",
                 storage_version="generation-1",
+            )
+
+    def test_managed_release_identity_round_trips_in_the_single_schema(self):
+        """Managed attempts carry complete immutable release coordinates."""
+        attempt = ManifestExecutionAttempt(
+            execution_attempt_id="attempt-1",
+            step_run_id="step-run-1",
+            attempt_number=1,
+            state="COMPLETED",
+            runner_type="cloud_run_job",
+            provider_execution_id="execution-1",
+            semantic_validator_id=17,
+            semantic_validator_slug="shacl",
+            semantic_validator_version="4",
+            semantic_validator_digest="a" * 64,
+            execution_deployment_id="deployment-1",
+            deployment_kind="CLOUD_RUN_JOB",
+            deployment_revision="v0-15-1-20260724",
+            provider_resource_name=(
+                "projects/example/locations/australia-southeast1/"
+                "jobs/vb-vj-shacl-v0-15-1"
+            ),
+            backend_slug="shacl",
+            backend_release_version="0.15.1",
+            source_release_tag="shacl-v0.15.1",
+            release_record_sha256="b" * 64,
+            backend_image_ref="ghcr.io/example/validator-shacl:v0.15.1",
+            backend_image_digest="sha256:" + "c" * 64,
+            provider_spec_sha256="d" * 64,
+            execution_config_sha256="e" * 64,
+            expected_runtime_identity=(
+                "validator-runtime@example-project.iam.gserviceaccount.com"
+            ),
+            attempt_contract_version="validibot.attempt.v2",
+            input_envelope_sha256="f" * 64,
+            output_envelope_sha256="0" * 64,
+            inputs_verified=True,
+        )
+        manifest = EvidenceManifest(
+            **_minimal_manifest_kwargs(),
+            execution_attempts=[attempt],
+        )
+
+        restored = EvidenceManifest.model_validate(manifest.model_dump(mode="json"))
+
+        assert restored.schema_version == "validibot.evidence.v1"
+        assert restored.execution_attempts[0] == attempt
+        assert restored.execution_attempts[0].backend_release_version == "0.15.1"
+
+    def test_managed_release_identity_rejects_partial_coordinates(self):
+        """A version alone cannot masquerade as portable managed-release proof."""
+        with pytest.raises(ValidationError, match="Managed release evidence"):
+            ManifestExecutionAttempt(
+                execution_attempt_id="attempt-1",
+                step_run_id="step-run-1",
+                attempt_number=1,
+                state="COMPLETED",
+                runner_type="cloud_run_job",
+                backend_slug="shacl",
+                backend_release_version="0.15.1",
+                attempt_contract_version="validibot.attempt.v2",
+                input_envelope_sha256="f" * 64,
             )
 
 

@@ -1,4 +1,4 @@
-"""Pydantic schema for validibot evidence manifests (``validibot.evidence.v1``).
+"""Pydantic schema for Validibot evidence manifests.
 
 ADR-2026-04-27 (Validibot Trust ADR), Phase 4: every completed
 validation run produces a manifest documenting "these are the rules
@@ -9,25 +9,23 @@ external verification possible.
 Why this lives in ``validibot-shared``
 ======================================
 
-The manifest is the contract between *manifest producers* (the
-Validibot Django app) and *verifiers* (the validibot-pro signing /
-verification flow, or any external party that receives an exported
-bundle). Pinning the schema in the shared package:
+The manifest is the contract between *manifest producers* (the Validibot
+Django app) and verifiers (the validibot-pro signing / verification flow).
+Pinning the schema in the shared package:
 
-1. Lets external verifiers depend on a single PyPI package without
-   pulling in the Django stack.
+1. Lets verifiers depend on a single package without pulling in the Django
+   stack.
 2. Keeps producer and verifier locked to the same version of the
    shape — additive changes preserve v1 by policy; breaking changes
    require a v2 module beside this one.
 
-Schema versioning policy
+Pre-launch schema policy
 ========================
 
-The string ``validibot.evidence.v1`` in :data:`SCHEMA_VERSION` is the
-*compatibility contract*. Additive changes (new optional fields,
-loosened validators) preserve v1. Removing or renaming fields, or
-tightening a validator in a way that rejects previously-valid input,
-requires a v2 module placed alongside this one (``manifest_v2.py``).
+The project has no external evidence consumers yet. Until the first public
+evidence release, the shared package version coordinates producer and verifier
+changes and this module remains the single strict schema. We do not maintain
+parallel schema modules or compatibility dispatchers for hypothetical users.
 
 What's in the schema (Phase 4 phasing)
 ======================================
@@ -49,13 +47,16 @@ file in the export bundle.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-# The string consumers parse to know what manifest shape to expect.
-# Bump only on breaking changes; additive changes stay v1.
 SCHEMA_VERSION = "validibot.evidence.v1"
+SEMVER_PATTERN = re.compile(
+    r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+    r"(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
+)
 
 
 class StepValidatorRecord(BaseModel):
@@ -586,6 +587,61 @@ class ManifestExecutionAttempt(BaseModel):
         default="",
         description="Canonical provider resource pinned by the deployment.",
     )
+    semantic_validator_id: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Producer-side semantic Validator identity selected for the attempt."
+        ),
+    )
+    semantic_validator_slug: str = Field(
+        default="",
+        description="Stable semantic Validator slug captured before dispatch.",
+    )
+    semantic_validator_version: str = Field(
+        default="",
+        description="Semantic Validator version captured before dispatch.",
+    )
+    semantic_validator_digest: str = Field(
+        default="",
+        pattern=r"^(?:|[0-9a-f]{64})$",
+        description="Semantic Validator configuration SHA-256, when available.",
+    )
+    backend_slug: str = Field(
+        default="",
+        description="Inventory backend slug selected for this attempt.",
+    )
+    backend_release_version: str = Field(
+        default="",
+        description="Independent semantic version of the selected backend release.",
+    )
+    source_release_tag: str = Field(
+        default="",
+        description="Signed backend-specific source tag, such as shacl-v0.15.1.",
+    )
+    release_record_sha256: str = Field(
+        default="",
+        pattern=r"^(?:|[0-9a-f]{64})$",
+        description="SHA-256 of the verified backend release JSON.",
+    )
+    backend_image_ref: str = Field(
+        default="",
+        description="Registry image reference recorded on the selected deployment.",
+    )
+    provider_spec_sha256: str = Field(
+        default="",
+        pattern=r"^(?:|[0-9a-f]{64})$",
+        description="SHA-256 of the verified provider resource specification.",
+    )
+    execution_config_sha256: str = Field(
+        default="",
+        pattern=r"^(?:|[0-9a-f]{64})$",
+        description="SHA-256 of the execution-affecting deployment configuration.",
+    )
+    expected_runtime_identity: str = Field(
+        default="",
+        description="Service-account identity expected to execute the attempt.",
+    )
     attempt_contract_version: str = Field(
         description="Strict attempt contract version used by the input envelope.",
     )
@@ -620,6 +676,59 @@ class ManifestExecutionAttempt(BaseModel):
         default_factory=list,
         description="Source-to-execution relationships, including preprocessing.",
     )
+
+    @model_validator(mode="after")
+    def _require_complete_managed_release_identity(self):
+        """Reject partial release evidence while allowing non-managed attempts."""
+        release_values = (
+            self.backend_slug,
+            self.backend_release_version,
+            self.source_release_tag,
+            self.release_record_sha256,
+            self.backend_image_ref,
+            self.provider_spec_sha256,
+            self.execution_config_sha256,
+            self.expected_runtime_identity,
+        )
+        if not any(release_values):
+            return self
+        required = {
+            "semantic_validator_id": self.semantic_validator_id,
+            "semantic_validator_slug": self.semantic_validator_slug,
+            "semantic_validator_version": self.semantic_validator_version,
+            "semantic_validator_digest": self.semantic_validator_digest,
+            "execution_deployment_id": self.execution_deployment_id,
+            "deployment_kind": self.deployment_kind,
+            "deployment_revision": self.deployment_revision,
+            "provider_resource_name": self.provider_resource_name,
+            "backend_slug": self.backend_slug,
+            "backend_release_version": self.backend_release_version,
+            "source_release_tag": self.source_release_tag,
+            "release_record_sha256": self.release_record_sha256,
+            "backend_image_ref": self.backend_image_ref,
+            "backend_image_digest": self.backend_image_digest,
+            "provider_spec_sha256": self.provider_spec_sha256,
+            "execution_config_sha256": self.execution_config_sha256,
+            "expected_runtime_identity": self.expected_runtime_identity,
+        }
+        missing = sorted(name for name, value in required.items() if not value)
+        if missing:
+            msg = f"Managed release evidence is incomplete: {', '.join(missing)}"
+            raise ValueError(msg)
+        if SEMVER_PATTERN.fullmatch(self.backend_release_version) is None:
+            msg = "backend_release_version must be a complete semantic version"
+            raise ValueError(msg)
+        expected_tag = f"{self.backend_slug}-v{self.backend_release_version}"
+        if self.source_release_tag != expected_tag:
+            msg = f"source_release_tag must be {expected_tag!r}"
+            raise ValueError(msg)
+        if re.fullmatch(r"sha256:[0-9a-f]{64}", self.backend_image_digest) is None:
+            msg = "backend_image_digest must be an exact SHA-256 digest"
+            raise ValueError(msg)
+        if self.deployment_kind not in {"CLOUD_RUN_SERVICE", "CLOUD_RUN_JOB"}:
+            msg = "managed release deployment_kind must be a Cloud Run Service or Job"
+            raise ValueError(msg)
+        return self
 
 
 class EvidenceManifest(BaseModel):

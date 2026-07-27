@@ -65,18 +65,31 @@ def test_named_ebl_identity_requires_the_portfolio_manager_label() -> None:
         )
 
 
-def test_washington_profile_applies_explicit_readiness_requirements() -> None:
-    """The convenience profile must expand into visible typed behavior."""
-    inputs = PortfolioManagerInputs(profile="washington_cbps_tier1_euit")
+def test_explicit_policy_fields_are_preserved_without_profile_mutation() -> None:
+    """The shared boundary must execute exactly the policy authored in the workflow."""
+    inputs = PortfolioManagerInputs(
+        require_complete_reporting_period=False,
+        require_benchmark_ready=True,
+        require_form_c_ready=False,
+        require_weather_normalized_site_eui=True,
+        require_washington_standard_id=True,
+        meter_gap_policy="warning",
+        estimated_energy_policy="error",
+    )
 
+    assert inputs.require_complete_reporting_period is False
     assert inputs.require_benchmark_ready is True
-    assert inputs.require_form_c_ready is True
+    assert inputs.require_form_c_ready is False
     assert inputs.require_weather_normalized_site_eui is True
-    assert inputs.require_complete_reporting_period is True
-    assert inputs.maximum_reporting_period_age_months == 24
-    assert inputs.meter_gap_policy == "error"
-    assert inputs.long_meter_entry_policy == "error"
-    assert inputs.estimated_energy_policy == "warning"
+    assert inputs.require_washington_standard_id is True
+    assert inputs.meter_gap_policy == "warning"
+    assert inputs.estimated_energy_policy == "error"
+
+
+def test_inputs_reject_unversioned_profile_shortcuts() -> None:
+    """V1 has no hidden preset channel that can override explicit author choices."""
+    with pytest.raises(ValidationError, match="profile"):
+        PortfolioManagerInputs(profile="washington_cbps_tier1_euit")
 
 
 def test_ebl_json_rejects_duplicate_keys_before_schema_validation() -> None:
@@ -159,7 +172,6 @@ def test_outputs_round_trip_decimal_metrics_without_float_loss() -> None:
     """Energy targets and ratios remain decimals across the JSON boundary."""
     outputs = PortfolioManagerOutputs(
         submission_structure="single_report",
-        profile="generic",
         file_count=1,
         valid_file_count=1,
         invalid_file_count=0,

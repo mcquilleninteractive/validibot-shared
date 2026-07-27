@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-07-27
+
+### Added
+
+- Extend the strict `validibot.evidence.v1` manifest so execution-attempt records
+  identify the semantic Validator contract, independent backend release,
+  source tag and release-record digest, image, provider configuration, and
+  runtime identity.
+
+### Changed
+
+- Make Portfolio Manager workflow policy entirely explicit by removing the
+  unversioned profile shortcut from its input and output contracts. Workflow
+  authors now control every readiness, reporting-period, target, and
+  data-quality setting independently.
+
+### Notes
+
+- Consumers must update their package pin and lockfile before using these
+  coordinated contract changes.
+- Validibot has no external evidence consumers before launch, so the new fields
+  extend the single current schema rather than adding parallel compatibility
+  readers. Managed-release fields remain optional as a group but are validated
+  as a complete identity whenever any member is present.
+
 ## [0.20.0] - 2026-07-23
 
 ### Added
