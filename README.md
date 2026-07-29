@@ -19,7 +19,7 @@
 ---
 
 > [!NOTE]
-> This library is part of the [Validibot](https://github.com/danielmcquillen/validibot) open-source data validation platform. It defines the data interchange contract between the core platform and validator backends.
+> This library is part of the [Validibot](https://github.com/mcquilleninteractive/validibot) open-source data validation platform. It defines the data interchange contract between the core platform and validator backends.
 
 ---
 
@@ -27,10 +27,10 @@
 
 | Repository | Description |
 |------------|-------------|
-| **[validibot](https://github.com/danielmcquillen/validibot)** | Core platform — web UI, REST API, workflow engine |
-| **[validibot-cli](https://github.com/danielmcquillen/validibot-cli)** | Command-line interface |
-| **[validibot-validator-backends](https://github.com/danielmcquillen/validibot-validator-backends)** | Validator backends for advanced validators (EnergyPlus™, FMU) |
-| **[validibot-shared](https://github.com/danielmcquillen/validibot-shared)** (this repo) | Shared Pydantic models for data interchange |
+| **[validibot](https://github.com/mcquilleninteractive/validibot)** | Core platform — web UI, REST API, workflow engine |
+| **[validibot-cli](https://github.com/mcquilleninteractive/validibot-cli)** | Command-line interface |
+| **[validibot-validator-backends](https://github.com/mcquilleninteractive/validibot-validator-backends)** | Validator backends for advanced validators (EnergyPlus™, FMU) |
+| **[validibot-shared](https://github.com/mcquilleninteractive/validibot-shared)** (this repo) | Shared Pydantic models for data interchange |
 
 ---
 
@@ -73,7 +73,7 @@ poetry add validibot-shared
 
 ### Requirements
 
-- Python 3.10 or later
+- Python 3.13 or later
 - Pydantic 2.13 or later (< 3.0)
 
 ## Core Concepts
@@ -398,10 +398,10 @@ This library is one component of the Validibot open-source data validation platf
 
 | Repository | Description |
 |------------|-------------|
-| **[validibot](https://github.com/danielmcquillen/validibot)** | Core platform — web UI, REST API, workflow engine |
-| **[validibot-cli](https://github.com/danielmcquillen/validibot-cli)** | Command-line interface |
-| **[validibot-validator-backends](https://github.com/danielmcquillen/validibot-validator-backends)** | Validator backends for advanced validators (EnergyPlus™, FMU) |
-| **[validibot-shared](https://github.com/danielmcquillen/validibot-shared)** (this repo) | Shared Pydantic models for data interchange |
+| **[validibot](https://github.com/mcquilleninteractive/validibot)** | Core platform — web UI, REST API, workflow engine |
+| **[validibot-cli](https://github.com/mcquilleninteractive/validibot-cli)** | Command-line interface |
+| **[validibot-validator-backends](https://github.com/mcquilleninteractive/validibot-validator-backends)** | Validator backends for advanced validators (EnergyPlus™, FMU) |
+| **[validibot-shared](https://github.com/mcquilleninteractive/validibot-shared)** (this repo) | Shared Pydantic models for data interchange |
 
 ### How It Fits Together
 
@@ -440,7 +440,7 @@ This library is one component of the Validibot open-source data validation platf
 
 ```bash
 # Clone the repository
-git clone https://github.com/danielmcquillen/validibot-shared.git
+git clone https://github.com/mcquilleninteractive/validibot-shared.git
 cd validibot-shared
 
 # Install with dev dependencies
@@ -465,8 +465,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-[Validibot Platform](https://github.com/danielmcquillen/validibot) •
+[Validibot Platform](https://github.com/mcquilleninteractive/validibot) •
 [Documentation](https://docs.validibot.com) •
-[Report Issues](https://github.com/danielmcquillen/validibot-shared/issues)
+[Report Issues](https://github.com/mcquilleninteractive/validibot-shared/issues)
 
 </div>

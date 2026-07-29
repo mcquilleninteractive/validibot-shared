@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-07-29
+
+### Changed
+
+- Move the canonical repository to the `mcquilleninteractive` organization.
+- Raise the minimum supported Python version to 3.13 and add Python 3.14 to
+  the tested compatibility matrix.
+- Harden releases with protected-main tag ancestry, signed-tag and version
+  verification, a single immutable distribution bundle, portable SHA-256
+  checksums, CycloneDX SBOMs, GitHub artifact attestations, and PyPI trusted
+  publishing provenance.
+- Add an aggregate CI gate, exact lockfile vulnerability auditing, and OpenSSF
+  Scorecard analysis.
+
 ## [0.21.0] - 2026-07-27
 
 ### Added

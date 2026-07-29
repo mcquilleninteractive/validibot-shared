@@ -1,23 +1,18 @@
-# Trust ADR Phase 5 Session D — Release workflow for validibot-shared.
+# Release pipeline for the public PyPI package.
 #
-# Publishes the wheel to PyPI with two layers of supply-chain provenance:
-#
-# 1. **OIDC build attestation** (``attestations: true`` on
-#    ``pypa/gh-action-pypi-publish``). PyPI records a sigstore-style
-#    attestation linking the wheel hash to *this exact* GitHub Actions
-#    run, signed via PyPI's trusted-publishing OIDC flow. Verifiers
-#    reading the wheel from PyPI can confirm "yes, this came from the
-#    Validibot CI on commit X."
-#
-# 2. **CycloneDX SBOM** of the package's resolved dependency tree,
-#    generated at build time and attached to the GitHub Release as a
-#    downloadable artifact. Operators auditing dependency chains can
-#    grab the SBOM from the release page without checking out source.
-#
-# Why both? OIDC attestation proves *who built it*; the SBOM
-# documents *what's inside it*. Together they answer "did this come
-# from where I think, and what does it carry?" — the two questions
-# a downstream operator's auditor cares about.
+# Trust boundaries:
+# - A GitHub Release must point at a commit reachable from protected main.
+# - Individual commits need not be signed; the signed release tag is the
+#   release identity and is verified separately from commit authorship.
+# - The SSH signer allowlist is loaded from protected main, not from the tag
+#   checkout, so a release tag cannot replace its own trust anchor.
+# - A release rerun after signer rotation requires protected main to retain the
+#   former public key in .allowed_signers.
+# - The tag version must match pyproject.toml exactly.
+# - Build, SBOM, checksums, and attestations all refer to the same downloaded
+#   workflow artifact.
+# - PyPI receives credentials only through its narrowly scoped environment and
+#   OIDC trusted publishing; this repository stores no publishing token.
 
 name: Publish to PyPI
 
@@ -28,94 +23,168 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
-    name: Build and publish to PyPI
-    runs-on: ubuntu-latest
-
-    permissions:
-      # Required for trusted publishing (OIDC token to PyPI).
-      id-token: write
-      # Required so the SBOM upload step can attach to the release.
-      contents: write
-
-    environment:
-      name: pypi
-      url: https://pypi.org/project/validibot-shared/
-
+  build:
+    name: Verify signed tag and build release
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Checkout the released tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Verify signed tag and release identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must be an exact vX.Y.Z version: $RELEASE_TAG"
+            exit 1
+          fi
+
+          TAG_COMMIT="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          HEAD_COMMIT="$(git rev-parse HEAD)"
+          if [[ "$TAG_COMMIT" != "$HEAD_COMMIT" ]]; then
+            echo "Checked-out commit does not match $RELEASE_TAG"
+            exit 1
+          fi
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main'
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "$RELEASE_TAG does not point to a commit on protected main"
+            exit 1
+          fi
+
+          TRUSTED_SIGNERS="$RUNNER_TEMP/validibot-allowed-signers"
+          git show origin/main:.allowed_signers > "$TRUSTED_SIGNERS"
+          git config --local gpg.format ssh
+          git config --local gpg.ssh.allowedSignersFile "$TRUSTED_SIGNERS"
+          git verify-tag "$RELEASE_TAG"
+
+          PACKAGE_VERSION="$(python3 -c \
+            'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+          if [[ "v$PACKAGE_VERSION" != "$RELEASE_TAG" ]]; then
+            echo "pyproject.toml version $PACKAGE_VERSION does not match $RELEASE_TAG"
+            exit 1
+          fi
 
       - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.5.16"
+          version: "0.11.19"
 
       - name: Set up Python
         run: uv python install 3.13
 
-      - name: Install project (so cyclonedx can introspect it)
-        run: uv sync
+      - name: Recreate the locked runtime environment
+        run: uv sync --frozen
 
-      - name: Build package
-        run: uv build
+      - name: Build distributions without local source overrides
+        run: uv build --no-sources
 
-      # Trust ADR Phase 5 Session D — generate a CycloneDX SBOM
-      # against the resolved dependency tree. ``cyclonedx-py`` ships
-      # under the ``cyclonedx-bom`` PyPI distribution; we invoke it
-      # via ``uvx`` so it runs in an isolated environment.
-      #
-      # SBOMs go in ``sbom/`` (not ``dist/``) on purpose. Twine's
-      # pre-flight check inside ``pypa/gh-action-pypi-publish``
-      # treats every file in ``dist/`` as a candidate for upload to
-      # PyPI and rejects ``.cdx.json`` / ``.cdx.xml`` as
-      # ``InvalidDistribution`` — which fails the publish step
-      # before the wheel ever reaches PyPI. Keeping SBOMs in their
-      # own directory avoids the collision.
-      - name: Generate CycloneDX SBOM (JSON)
+      - name: Validate distributions
+        run: |
+          uvx --from twine==7.0.0 twine check --strict dist/*
+          test "$(find dist -maxdepth 1 -type f -name '*.whl' | wc -l | tr -d ' ')" = "1"
+          test "$(find dist -maxdepth 1 -type f -name '*.tar.gz' | wc -l | tr -d ' ')" = "1"
+
+      - name: Generate CycloneDX SBOMs from the locked environment
         run: |
           mkdir -p sbom
-          uvx --from cyclonedx-bom cyclonedx-py environment \
+          uvx --from cyclonedx-bom==7.3.1 cyclonedx-py environment \
+            .venv/bin/python \
             --output-format JSON \
             --output-file sbom/validibot-shared.cdx.json
-
-      - name: Generate CycloneDX SBOM (XML)
-        run: |
-          uvx --from cyclonedx-bom cyclonedx-py environment \
+          uvx --from cyclonedx-bom==7.3.1 cyclonedx-py environment \
+            .venv/bin/python \
             --output-format XML \
             --output-file sbom/validibot-shared.cdx.xml
 
-      - name: Upload SBOM as workflow artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        with:
-          name: validibot-shared-sbom
-          path: |
-            sbom/validibot-shared.cdx.json
-            sbom/validibot-shared.cdx.xml
-          retention-days: 90
+      - name: Record release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            sha256sum *
+          ) > SHA256SUMS
+          (
+            cd sbom
+            sha256sum *
+          ) >> SHA256SUMS
 
-      # Attach the SBOM to the GitHub Release so it appears alongside
-      # the wheel on the release's downloads page. We bind
-      # ``RELEASE_TAG`` via env (rather than interpolating directly
-      # into the run script) — the recommended pattern for any
-      # untrusted GitHub event input, even though release tag names
-      # are server-validated.
-      - name: Attach SBOM to GitHub Release
+      - name: Upload immutable release bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-bundle
+          path: |
+            dist/
+            sbom/
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
+
+  release-evidence:
+    name: Attest and attach release evidence
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - name: Download immutable release bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-bundle
+
+      - name: Attest distributions and their SBOM
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-path: dist/*
+          sbom-path: sbom/validibot-shared.cdx.json
+
+      - name: Attach distributions, SBOMs, and checksums to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           gh release upload "$RELEASE_TAG" \
+            dist/* \
             sbom/validibot-shared.cdx.json \
             sbom/validibot-shared.cdx.xml \
+            SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
             --clobber
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247  # v1.14.1
+  publish-pypi:
+    name: Publish verified distributions to PyPI
+    needs: release-evidence
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/validibot-shared/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download immutable release bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          # OIDC build attestation — PyPI records a sigstore-style
-          # attestation linking the wheel hash to this GitHub Actions
-          # run. Verifiers can pull the attestation via PyPI's API and
-          # confirm "yes, this came from this CI run."
+          name: release-bundle
+
+      - name: Publish to PyPI with provenance attestations
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+        with:
+          packages-dir: dist/
           attestations: true

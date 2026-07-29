@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "validibot-shared"
-version = "0.21.0"
+version = "0.22.0"
 description = "Shared library for data interchange between Validibot and validator containers"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Daniel McQuillen", email = "daniel@validibot.com" }]
 maintainers = [{ name = "Daniel McQuillen", email = "daniel@validibot.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 keywords = [
     "validibot",
     "validation",
@@ -27,10 +27,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering",
 ]
@@ -42,8 +40,8 @@ dev = ["pytest==9.1.1", "ruff==0.15.22"]
 [project.urls]
 Homepage = "https://validibot.com"
 Documentation = "https://docs.validibot.com"
-Repository = "https://github.com/danielmcquillen/validibot-shared"
-Issues = "https://github.com/danielmcquillen/validibot-shared/issues"
+Repository = "https://github.com/mcquilleninteractive/validibot-shared"
+Issues = "https://github.com/mcquilleninteractive/validibot-shared/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["validibot_shared"]
@@ -53,7 +51,7 @@ include = ["/validibot_shared", "/tests", "/README.md", "/LICENSE"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -64,6 +62,11 @@ select = [
     "B",  # flake8-bugbear
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
+]
+ignore = [
+    # These enums are public wire-contract types. Migrating to StrEnum changes
+    # str(member) behavior and must be coordinated across every consumer.
+    "UP042",
 ]
 
 [tool.ruff.lint.isort]
