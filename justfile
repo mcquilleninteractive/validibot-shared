@@ -39,13 +39,13 @@ clean:
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 # Release a new version (signed tag + GitHub release → verified PyPI publish)
-# Usage: just release 0.21.1
+# Usage: just release 0.22.0
 release VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
 
     if [[ ! "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        echo "Error: Version must be in format X.Y.Z (e.g., 0.21.1)"
+        echo "Error: Version must be in format X.Y.Z (e.g., 0.22.0)"
         exit 1
     fi
 

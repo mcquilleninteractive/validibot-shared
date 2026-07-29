@@ -73,7 +73,7 @@ poetry add validibot-shared
 
 ### Requirements
 
-- Python 3.10 or later
+- Python 3.13 or later
 - Pydantic 2.13 or later (< 3.0)
 
 ## Core Concepts
