@@ -38,59 +38,68 @@ clean:
     rm -rf dist/ build/ *.egg-info/ validibot_shared.egg-info/ sv_shared.egg-info/ vb_shared.egg-info/
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
-# Release a new version (tag + GitHub release → PyPI publish)
-# Usage: just release 0.3.1
+# Release a new version (signed tag + GitHub release → verified PyPI publish)
+# Usage: just release 0.21.1
 release VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Validate version format
     if [[ ! "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        echo "Error: Version must be in format X.Y.Z (e.g., 0.3.1)"
+        echo "Error: Version must be in format X.Y.Z (e.g., 0.21.1)"
         exit 1
     fi
 
-    # Check for uncommitted changes
     if [[ -n $(git status --porcelain) ]]; then
         echo "Error: You have uncommitted changes. Commit or stash them first."
         exit 1
     fi
 
-    # Check we're on main branch
-    BRANCH=$(git branch --show-current)
+    BRANCH="$(git branch --show-current)"
     if [[ "$BRANCH" != "main" ]]; then
-        echo "Warning: You're on branch '$BRANCH', not 'main'. Continue? [y/N]"
-        read -r REPLY
-        if [[ ! "$REPLY" =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    fi
-
-    # Check version in pyproject.toml matches
-    TOML_VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-    if [[ "$TOML_VERSION" != "{{VERSION}}" ]]; then
-        echo "Error: Version in pyproject.toml ($TOML_VERSION) doesn't match {{VERSION}}"
-        echo "Update pyproject.toml first, then commit."
+        echo "Error: Releases must be created from main, not '$BRANCH'."
         exit 1
     fi
 
-    echo "Releasing v{{VERSION}}..."
+    git fetch origin main
+    LOCAL_COMMIT="$(git rev-parse HEAD)"
+    REMOTE_COMMIT="$(git rev-parse origin/main)"
+    if [[ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]]; then
+        echo "Error: Local main must exactly match origin/main."
+        exit 1
+    fi
 
-    # Sign the tag. The publish workflow doesn't currently enforce
-    # signature verification (PyPI's OIDC attestation is the primary
-    # integrity check), but a signed tag adds a maintainer-attested
-    # layer that operators reading the GitHub release page can
-    # verify with `git verify-tag`. Requires
-    # `git config --global tag.gpgsign true` and a signing key.
-    git tag -s "v{{VERSION}}" -m "v{{VERSION}}"
-    git push origin "v{{VERSION}}"
+    TOML_VERSION="$(python3 -c \
+        'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+    if [[ "$TOML_VERSION" != "{{VERSION}}" ]]; then
+        echo "Error: Version in pyproject.toml ($TOML_VERSION) doesn't match {{VERSION}}"
+        exit 1
+    fi
 
-    # Create GitHub release (triggers PyPI publish via Actions)
-    gh release create "v{{VERSION}}" \
-        --title "v{{VERSION}}" \
-        --notes "See [CHANGELOG.md](CHANGELOG.md) for details."
+    TAG="v{{VERSION}}"
+    if git rev-parse "$TAG" >/dev/null 2>&1; then
+        echo "Error: Tag $TAG already exists."
+        exit 1
+    fi
+
+    echo "Running the full release gate..."
+    just check
+    uv lock --check
+    RELEASE_CHECK_DIR="$(mktemp -d)"
+    trap 'rm -rf "$RELEASE_CHECK_DIR"' EXIT
+    uv build --no-sources --out-dir "$RELEASE_CHECK_DIR"
+    uvx --from twine==7.0.0 twine check --strict "$RELEASE_CHECK_DIR"/*
+
+    echo "Creating and verifying signed tag $TAG..."
+    git tag -s -m "Release $TAG" "$TAG"
+    git verify-tag "$TAG"
+    git push origin "$TAG"
+
+    gh release create "$TAG" \
+        --verify-tag \
+        --title "$TAG" \
+        --generate-notes
 
     echo ""
-    echo "Release v{{VERSION}} created!"
-    echo "GitHub Actions will publish to PyPI automatically."
+    echo "Release $TAG created from signed tag $LOCAL_COMMIT."
+    echo "GitHub Actions will verify it again, attest it, and publish to PyPI."
     echo "Monitor: gh run list --limit 3"

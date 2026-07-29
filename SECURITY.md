@@ -28,6 +28,6 @@ initial assessment within 10 business days.
 This security policy covers the `validibot-shared` repository only. For
 security issues in other Validibot components, see:
 
-- [validibot](https://github.com/danielmcquillen/validibot) (core platform)
-- [validibot-validator-backends](https://github.com/danielmcquillen/validibot-validator-backends) (validator backend containers)
-- [validibot-cli](https://github.com/danielmcquillen/validibot-cli) (CLI)
+- [validibot](https://github.com/mcquilleninteractive/validibot) (core platform)
+- [validibot-validator-backends](https://github.com/mcquilleninteractive/validibot-validator-backends) (validator backend containers)
+- [validibot-cli](https://github.com/mcquilleninteractive/validibot-cli) (CLI)
