@@ -42,6 +42,12 @@ PortfolioManagerIdKind = Literal[
 ]
 MetricFieldState = Literal["absent", "clean", "alert", "not_verifiable"]
 MetricValueState = Literal["absent", "value", "not_available", "invalid"]
+GrossFloorAreaBasis = Literal[
+    "absent",
+    "self_reported",
+    "buildings_and_parking_less_parking",
+    "buildings_and_parking",
+]
 PortfolioManagerCheckPolicy = Literal["allow", "warning", "error"]
 MAX_EBL_BYTES = 5_000_000
 MAX_EBL_JSON_DEPTH = 12
@@ -236,7 +242,18 @@ class PortfolioManagerPropertyResult(BaseModel):
     reporting_period_complete: bool | None = None
     reporting_period_fresh: bool | None = None
     property_type: str = ""
+    # EPA's gross floor area excludes parking, outside bays, and docks, and
+    # Washington CBPS computes EUIt on the Form B floor area on that same
+    # basis. This field always carries the parking-excluded quantity; the two
+    # fields below retain the parking-inclusive and parking-only columns so a
+    # report that publishes only those can still be read and audited.
     gross_floor_area_ft2: Decimal | None = Field(default=None, ge=0)
+    gross_floor_area_basis: GrossFloorAreaBasis = "absent"
+    gross_floor_area_buildings_and_parking_ft2: Decimal | None = Field(
+        default=None,
+        ge=0,
+    )
+    parking_floor_area_ft2: Decimal | None = Field(default=None, ge=0)
     site_eui_kbtu_ft2_yr: Decimal | None = Field(default=None, ge=0)
     weather_normalized_site_eui_kbtu_ft2_yr: Decimal | None = Field(
         default=None,
