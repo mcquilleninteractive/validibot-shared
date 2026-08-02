@@ -1,4 +1,4 @@
-"""Evidence-manifest schema (``validibot.evidence.v1``).
+"""Evidence-manifest schema (published as ``evidence-manifest-v2.json``).
 
 Public API for both the Validibot Django app (which generates
 manifests when validation runs complete) and the Pro / external
@@ -9,34 +9,14 @@ manifest without pulling in the application stack.
 
 from validibot_shared.evidence.manifest import (
     SCHEMA_VERSION,
-    ContractConstant,
-    ContractSignalMapping,
     EvidenceManifest,
-    ManifestArtifactInputBinding,
-    ManifestArtifactLineageEdge,
-    ManifestExecutionAttempt,
-    ManifestExecutionInput,
-    ManifestInputRelationship,
-    ManifestPayloadDigests,
-    ManifestProducedArtifact,
-    ManifestRetentionInfo,
-    StepValidatorRecord,
-    WorkflowContractSnapshot,
+    WorkflowReceipt,
+    WorkflowStepReceipt,
 )
 
 __all__ = [
     "SCHEMA_VERSION",
-    "ContractConstant",
-    "ContractSignalMapping",
     "EvidenceManifest",
-    "ManifestArtifactInputBinding",
-    "ManifestArtifactLineageEdge",
-    "ManifestExecutionAttempt",
-    "ManifestExecutionInput",
-    "ManifestInputRelationship",
-    "ManifestPayloadDigests",
-    "ManifestProducedArtifact",
-    "ManifestRetentionInfo",
-    "StepValidatorRecord",
-    "WorkflowContractSnapshot",
+    "WorkflowReceipt",
+    "WorkflowStepReceipt",
 ]

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-07-30
+
+### Added
+
+- Separate the three Portfolio Manager floor-area columns on
+  `PortfolioManagerPropertyResult`. `gross_floor_area_ft2` now always carries
+  the parking-excluded quantity matching EPA's gross floor area definition and
+  Washington CBPS's Form B basis. `gross_floor_area_buildings_and_parking_ft2`
+  and `parking_floor_area_ft2` retain the other two columns, and
+  `gross_floor_area_basis` records which one backs the canonical value.
+
+### Changed
+
+- Replace the evidence manifest with a strict v2 permanent receipt containing
+  only run outcome, workflow-step identity, the optional per-step backend image
+  digest, and input/output digests. Runtime lineage, workflow configuration,
+  retention metadata, and provider details are no longer part of the manifest.
+- Portfolio Manager reports carrying both a parking-excluded and a
+  parking-inclusive floor-area column now resolve deterministically to the
+  parking-excluded value instead of depending on column or metric order.
+
 ## [0.22.0] - 2026-07-29
 
 ### Changed

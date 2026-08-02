@@ -16,16 +16,9 @@ from validibot_shared.evidence import (
     SCHEMA_VERSION as EVIDENCE_SCHEMA_VERSION,
 )
 from validibot_shared.evidence import (
-    ContractConstant,
-    ContractSignalMapping,
     EvidenceManifest,
-    ManifestExecutionAttempt,
-    ManifestExecutionInput,
-    ManifestInputRelationship,
-    ManifestPayloadDigests,
-    ManifestRetentionInfo,
-    StepValidatorRecord,
-    WorkflowContractSnapshot,
+    WorkflowReceipt,
+    WorkflowStepReceipt,
 )
 from validibot_shared.fmu.models import FMUProbeResult, FMUVariableMeta
 from validibot_shared.portfolio_manager import (
@@ -46,8 +39,6 @@ from validibot_shared.shacl.envelopes import (
 
 __all__ = [
     "EVIDENCE_SCHEMA_VERSION",
-    "ContractConstant",
-    "ContractSignalMapping",
     "canonicalize_dict",
     "canonicalize_model",
     "compute_callback_nonce_commitment",
@@ -58,11 +49,6 @@ __all__ = [
     "FMUProbeResult",
     "FMUVariableMeta",
     "ExpectedBuildingsList",
-    "ManifestPayloadDigests",
-    "ManifestExecutionAttempt",
-    "ManifestExecutionInput",
-    "ManifestInputRelationship",
-    "ManifestRetentionInfo",
     "PortfolioManagerInputEnvelope",
     "PortfolioManagerInputs",
     "PortfolioManagerOutputEnvelope",
@@ -75,6 +61,6 @@ __all__ = [
     "SHACLSparqlAssertionSpec",
     "sha256_hex_for_dict",
     "sha256_hex_for_model",
-    "StepValidatorRecord",
-    "WorkflowContractSnapshot",
+    "WorkflowReceipt",
+    "WorkflowStepReceipt",
 ]
