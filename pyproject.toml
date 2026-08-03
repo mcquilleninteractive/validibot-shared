@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "validibot-shared"
-version = "0.23.0"
+version = "0.24.0"
 description = "Shared library for data interchange between Validibot and validator containers"
 readme = "README.md"
 license = { text = "MIT" }

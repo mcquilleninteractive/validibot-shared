@@ -23,6 +23,20 @@ LOG_TAIL_LINES = 200
 # Type alias for invocation modes
 InvocationMode = Literal["python_api", "cli"]
 
+# Review profiles change evidence requirements and issue severity, never the
+# EnergyPlus simulation engine itself.  Keeping the values in the shared wire
+# contract prevents Django and the backend from silently inventing different
+# spellings.
+EnergyPlusReviewProfile = Literal["standard", "leed_review"]
+
+# Validibot review checks run against a private working copy of the submitted
+# model before EnergyPlus is invoked.  They are deliberately not raw CLI flags.
+EnergyPlusIdfCheck = Literal[
+    "duplicate-names",
+    "hvac-sizing",
+    "schedule-coverage",
+]
+
 # Type aliases for non-negative numbers
 NonNegFloat = Annotated[float, Field(ge=0)]
 NonNegInt = Annotated[int, Field(ge=0)]
@@ -72,6 +86,10 @@ class EnergyPlusSimulationMetrics(BaseModel):
 
     # District heating energy (if present in model)
     site_district_heating_kwh: NonNegFloat | None = None
+
+    # Other GJ-valued site fuels combined (fuel oil, propane, coal,
+    # gasoline/diesel, additional/other fuels, and future fuel columns).
+    site_other_fuels_kwh: NonNegFloat | None = None
 
     # ==========================================================================
     # Energy Use Intensity

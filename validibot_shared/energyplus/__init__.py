@@ -9,6 +9,8 @@ from .envelopes import (
     EnergyPlusOutputs,
 )
 from .models import (
+    EnergyPlusIdfCheck,
+    EnergyPlusReviewProfile,
     EnergyPlusSimulationLogs,
     EnergyPlusSimulationMetrics,
     EnergyPlusSimulationOutputs,
@@ -16,9 +18,11 @@ from .models import (
 
 __all__ = [
     "EnergyPlusInputEnvelope",
+    "EnergyPlusIdfCheck",
     "EnergyPlusInputs",
     "EnergyPlusOutputEnvelope",
     "EnergyPlusOutputs",
+    "EnergyPlusReviewProfile",
     "EnergyPlusSimulationLogs",
     "EnergyPlusSimulationMetrics",
     "EnergyPlusSimulationOutputs",

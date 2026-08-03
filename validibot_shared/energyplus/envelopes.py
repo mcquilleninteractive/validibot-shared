@@ -37,6 +37,8 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from validibot_shared.energyplus.models import (
+    EnergyPlusIdfCheck,
+    EnergyPlusReviewProfile,
     EnergyPlusSimulationLogs,
     EnergyPlusSimulationMetrics,
     EnergyPlusSimulationOutputs,
@@ -105,6 +107,27 @@ class EnergyPlusInputs(BaseModel):
     invocation_mode: InvocationMode = Field(
         default="cli",
         description="How to invoke EnergyPlus: 'cli' or 'python_api'",
+    )
+
+    idf_checks: list[EnergyPlusIdfCheck] = Field(
+        default_factory=list,
+        description=(
+            "Validibot preflight checks to run against a working model copy; "
+            "these are not EnergyPlus CLI flags"
+        ),
+    )
+
+    run_simulation: bool = Field(
+        default=True,
+        description=(
+            "Run a full weather-based simulation when true; run conversion and "
+            "review preflight only when false"
+        ),
+    )
+
+    review_profile: EnergyPlusReviewProfile = Field(
+        default="standard",
+        description="Review evidence/severity profile; does not change the engine",
     )
 
     model_config = {"extra": "forbid"}
@@ -184,6 +207,31 @@ class EnergyPlusOutputs(BaseModel):
     invocation_mode: InvocationMode = Field(
         description="How EnergyPlus was invoked ('cli' or 'python_api')"
     )
+
+    # Execution and version evidence. Optional strings remain explicit nulls
+    # when the installed binary/model does not expose a value.
+    energyplus_binary_version: str | None = None
+    energyplus_binary_build: str | None = None
+    idd_version: str | None = None
+    idd_build: str | None = None
+    idd_path: str | None = None
+    idf_version: str | None = None
+    version_match: bool | None = None
+    completed_successfully: bool = False
+
+    # Reviewer-grade issue summary. Counts are independent from presentation
+    # filtering of individual warnings in the Django application.
+    warning_count: int = Field(default=0, ge=0)
+    severe_count: int = Field(default=0, ge=0)
+    fatal_count: int = Field(default=0, ge=0)
+    review_issue_count: int = Field(default=0, ge=0)
+
+    # Artifact availability is reported independently of uploaded artifact
+    # references so assertions can explain why a metric is unavailable.
+    has_sql_output: bool = False
+    has_err_output: bool = False
+    has_csv_output: bool = False
+    has_eso_output: bool = False
 
     model_config = {"extra": "forbid"}
 
