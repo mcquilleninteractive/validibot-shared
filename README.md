@@ -323,9 +323,7 @@ result = FMUProbeResult.success(
 )
 
 # Create a failure result
-result = FMUProbeResult.failure(
-    errors=["Invalid FMU: missing modelDescription.xml"]
-)
+result = FMUProbeResult.failure(errors=["Invalid FMU: missing modelDescription.xml"])
 
 # Serialize for response
 json_response = result.model_dump_json()
@@ -342,19 +340,23 @@ from validibot_shared.validations.envelopes import (
     ValidationOutputEnvelope,
 )
 
+
 # Define your validator's input configuration
 class MyValidatorInputs(BaseModel):
     strict_mode: bool = False
     max_errors: int = 100
+
 
 # Define your validator's output data
 class MyValidatorOutputs(BaseModel):
     items_checked: int
     items_passed: int
 
+
 # Create typed envelope subclasses
 class MyValidatorInputEnvelope(ValidationInputEnvelope):
     inputs: MyValidatorInputs
+
 
 class MyValidatorOutputEnvelope(ValidationOutputEnvelope):
     outputs: MyValidatorOutputs | None = None
@@ -366,33 +368,33 @@ class MyValidatorOutputEnvelope(ValidationOutputEnvelope):
 
 ```python
 class ValidationInputEnvelope(BaseModel):
-    run_id: str                      # Unique identifier for this validation run
-    validator: ValidatorInfo         # Validator identification
-    input_files: list[InputFileItem] # Files to validate
-    inputs: dict[str, Any]           # Validator-specific configuration
-    context: ExecutionContext        # Callback URL, bundle URI, etc.
+    run_id: str  # Unique identifier for this validation run
+    validator: ValidatorInfo  # Validator identification
+    input_files: list[InputFileItem]  # Files to validate
+    inputs: dict[str, Any]  # Validator-specific configuration
+    context: ExecutionContext  # Callback URL, bundle URI, etc.
 ```
 
 ### ValidationOutputEnvelope
 
 ```python
 class ValidationOutputEnvelope(BaseModel):
-    run_id: str                          # Matches input run_id
-    status: str                          # "success", "failure", "error"
-    messages: list[ValidationMessage]    # Validation findings
-    metrics: list[ValidationMetric]      # Numeric metrics
+    run_id: str  # Matches input run_id
+    status: str  # "success", "failure", "error"
+    messages: list[ValidationMessage]  # Validation findings
+    metrics: list[ValidationMetric]  # Numeric metrics
     artifacts: list[ValidationArtifact]  # Output files
-    outputs: dict[str, Any] | None       # Validator-specific results
-    execution_seconds: float | None      # Execution time
+    outputs: dict[str, Any] | None  # Validator-specific results
+    execution_seconds: float | None  # Execution time
 ```
 
 ### ValidationMessage
 
 ```python
 class ValidationMessage(BaseModel):
-    severity: str    # "error", "warning", "info"
-    code: str | None # Machine-readable code
-    text: str        # Human-readable message
+    severity: str  # "error", "warning", "info"
+    code: str | None  # Machine-readable code
+    text: str  # Human-readable message
     location: str | None  # File/line reference
 ```
 
