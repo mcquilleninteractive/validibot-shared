@@ -166,8 +166,12 @@ for bytes. For example, EnergyPlus timestep settings belong in
 `EnergyPlusInputs`; the IDF/epJSON model and EPW weather file belong in file
 ports rendered to `input_files` / `resource_files`.
 
-Backends should read files by role and `port_key` when available, not by
-assuming `input_files[0]` forever. Every file item commits to an exact size,
+Backends should find each file by matching `port_key` first and falling back to
+`role` or `type`, not by assuming `input_files[0]` forever. `port_key` is
+optional, so a backend that requires it will reject schema-valid envelopes —
+including the ones built by `build_shacl_input_envelope`,
+`build_schematron_input_envelope`, and `build_fmu_input_envelope`, which carry
+a `role` and no port key. Every file item commits to an exact size,
 SHA-256, and provider-specific immutable storage version; runtimes must verify
 those fields while streaming before a validator parses or executes the bytes.
 

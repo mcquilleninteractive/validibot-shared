@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-08-10
+
+### Added
+
+- Add shared input-file and resource-file selectors that resolve singleton
+  envelope ports by their stable `port_key`, use the older role/type only when
+  an item has no port key, and reject missing or ambiguous inputs without
+  depending on file-list order.
+
+### Changed
+
+- Make the FMU, SHACL, and Schematron envelope builders identify their primary
+  files with the declared `fmu_model`, `data_graph`, and `xml_document` port
+  keys and matching backend roles.
+
+### Notes
+
+- Validator backends should adopt these selectors together so Django and every
+  isolated runner interpret the shared file-port contract consistently.
+
+## [0.25.0] - 2026-08-07
+
+### Added
+
+- Add the generic PDF package validator envelope, exact payload selectors,
+  bounded parser policy, and canonical `validibot.pdf_inventory.v1` models.
+- Add PDF, STEP Part 21, and related MIME identities used by typed PDF package
+  inputs and extracted outputs.
+
+### Notes
+
+- The application and validator-backends repositories must upgrade together;
+  PDF is a new typed advanced-validator boundary.
+
 ## [0.24.0] - 2026-08-03
 
 ### Added

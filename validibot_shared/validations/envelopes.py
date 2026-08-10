@@ -160,6 +160,7 @@ class ValidatorType(str, Enum):
     CUSTOM_VALIDATOR = "CUSTOM_VALIDATOR"
     AI_ASSIST = "AI_ASSIST"
     PORTFOLIO_MANAGER = "PORTFOLIO_MANAGER"
+    PDF = "PDF"
 
 
 # ==============================================================================
@@ -203,6 +204,11 @@ class SupportedMimeType(str, Enum):
     )
     APPLICATION_ZIP = "application/zip"
     APPLICATION_JSON = "application/json"
+
+    # Engineering document packages and neutral CAD payloads.
+    APPLICATION_PDF = "application/pdf"
+    MODEL_STEP = "model/step"
+    APPLICATION_P21 = "application/p21"
 
 
 def _safe_leaf_name(value: str) -> str:
