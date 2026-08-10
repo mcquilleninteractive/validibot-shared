@@ -83,7 +83,16 @@ jobs:
 
   ci:
     name: ci
+    if: always()
     runs-on: ubuntu-latest
     needs: [security, test, deps]
     steps:
-      - run: echo "All checks passed."
+      - name: Require every CI job to pass
+        env:
+          SECURITY_RESULT: ${{ needs.security.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          DEPS_RESULT: ${{ needs.deps.result }}
+        run: |
+          test "$SECURITY_RESULT" = "success"
+          test "$TEST_RESULT" = "success"
+          test "$DEPS_RESULT" = "success"
