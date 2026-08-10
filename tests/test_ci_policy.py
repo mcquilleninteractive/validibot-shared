@@ -1,14 +1,20 @@
 """Security contracts for branch-protection-facing GitHub Actions checks.
 
 The protected branch requires the aggregate ``ci`` check rather than every
-matrix child by name. These tests ensure that aggregate always runs and fails
-unless each security, test, and dependency prerequisite succeeded.
+matrix child by name. These tests ensure the aggregate fails closed across
+secret scanning, SAST, tests, and dependency auditing, and that security tools
+are installed only from the repository's reviewed lockfile.
 """
 
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+PYPROJECT = REPO_ROOT / "pyproject.toml"
+UV_LOCK = REPO_ROOT / "uv.lock"
+
+SETUP_UV_SHA = "c771a70e6277c0a99b617c7a806ffedaca235ff9"
+CODEQL_ACTION_SHA = "f205ea1c3313d32999d8d6a48b4f6530d4437b38"
 
 
 def test_required_ci_aggregate_fails_closed():
@@ -17,10 +23,50 @@ def test_required_ci_aggregate_fails_closed():
     aggregate = workflow.split("\n  ci:\n", maxsplit=1)[1]
 
     assert "if: always()" in aggregate
-    assert "needs: [security, test, deps]" in aggregate
-    for prerequisite in ("security", "test", "deps"):
+    assert "needs: [security, codeql, test, deps]" in aggregate
+    for prerequisite in ("security", "codeql", "test", "deps"):
         result_variable = f"${{{{ needs.{prerequisite}.result }}}}"
         assert result_variable in aggregate
-    for environment_variable in ("SECURITY_RESULT", "TEST_RESULT", "DEPS_RESULT"):
+    for environment_variable in (
+        "SECURITY_RESULT",
+        "CODEQL_RESULT",
+        "TEST_RESULT",
+        "DEPS_RESULT",
+    ):
         assert f'test "${environment_variable}" = "success"' in aggregate
     assert 'echo "All checks passed."' not in aggregate
+
+
+def test_secret_scanners_run_from_the_frozen_dependency_environment():
+    """Secret scanning must not bypass the reviewed hashes in ``uv.lock``."""
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    security_job = workflow.split("\n  security:\n", maxsplit=1)[1].split(
+        "\n  codeql:\n", maxsplit=1
+    )[0]
+    pyproject = PYPROJECT.read_text(encoding="utf-8")
+    lockfile = UV_LOCK.read_text(encoding="utf-8")
+
+    assert f"astral-sh/setup-uv@{SETUP_UV_SHA}" in security_job
+    assert "uv python install 3.13" in security_job
+    assert "uv sync --frozen --extra dev --python 3.13" in security_job
+    assert security_job.count("uv run --frozen --extra dev --python 3.13") == 2
+    assert "pip install" not in workflow
+    assert "pre-commit==4.5.1" in pyproject
+    assert 'name = "pre-commit"' in lockfile
+
+
+def test_codeql_scans_python_as_a_required_ci_prerequisite():
+    """Every integrated change must receive SAST before ``ci`` can succeed."""
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    codeql_job = workflow.split("\n  codeql:\n", maxsplit=1)[1].split(
+        "\n  test:\n", maxsplit=1
+    )[0]
+
+    assert "actions: read" in codeql_job
+    assert "contents: read" in codeql_job
+    assert "security-events: write" in codeql_job
+    assert "persist-credentials: false" in codeql_job
+    assert f"github/codeql-action/init@{CODEQL_ACTION_SHA}" in codeql_job
+    assert f"github/codeql-action/analyze@{CODEQL_ACTION_SHA}" in codeql_job
+    assert "languages: python" in codeql_job
+    assert "build-mode: none" in codeql_job

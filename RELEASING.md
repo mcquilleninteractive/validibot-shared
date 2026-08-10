@@ -32,6 +32,21 @@ integration. Release signing is a separate boundary: every published release
 still requires a signed tag verified against the `.allowed_signers` policy
 loaded from protected `main`.
 
+## Integration guarantees
+
+The required `ci` check is a fail-closed aggregate. On every pull request and
+every push to `main`, it succeeds only after all of these jobs succeed:
+
+1. private-key and tracked-file secret scanning, with `pre-commit` installed
+   from the hash-locked `uv.lock` environment rather than directly from PyPI;
+2. CodeQL static analysis of the Python source;
+3. linting, formatting, and tests on every supported Python version; and
+4. lockfile consistency and known-vulnerability auditing.
+
+The CodeQL job receives only read access to Actions and repository contents,
+plus the `security-events: write` permission needed to publish its analysis.
+All third-party actions in the workflow are pinned to full commit SHAs.
+
 ## Maintainer procedure
 
 1. Update `pyproject.toml`, `uv.lock`, and `CHANGELOG.md` in a pull request.

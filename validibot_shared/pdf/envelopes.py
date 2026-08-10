@@ -16,7 +16,129 @@ from validibot_shared.validations.envelopes import (
     ValidationOutputEnvelope,
 )
 
-PDF_INVENTORY_SCHEMA_VERSION = "validibot.pdf_inventory.v1"
+PDF_INVENTORY_SCHEMA_VERSION = "validibot.pdf_inventory.v2"
+
+
+class PdfExtension(BaseModel):
+    """One declared PDF extension dictionary, including unknown developers."""
+
+    developer: str = Field(max_length=255)
+    object_reference: str = Field(default="", max_length=64)
+    base_version: str = Field(default="", max_length=64)
+    extension_level: int | None = Field(default=None, ge=0)
+    extension_revision: int | None = Field(default=None, ge=0)
+    url: str = Field(default="", max_length=2048)
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfRequirement(BaseModel):
+    """One catalog requirement dictionary without interpreting its domain."""
+
+    position: int = Field(ge=0)
+    object_reference: str = Field(default="", max_length=64)
+    type: str = Field(default="", max_length=255)
+    subtype: str = Field(default="", max_length=255)
+    keys: list[str] = Field(default_factory=list, max_length=128)
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfDeclaration(BaseModel):
+    """One identifier asserted through the PDF Declarations XMP convention."""
+
+    identifier: str = Field(max_length=2048)
+    source_qname: str = Field(default="", max_length=1024)
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfCollectionField(BaseModel):
+    """One bounded field declared by a PDF Collection schema."""
+
+    name: str = Field(max_length=512)
+    subtype: str = Field(default="", max_length=64)
+    display_name: str = Field(default="", max_length=512)
+    order: int | None = None
+    visible: bool | None = None
+    editable: bool | None = None
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfCollection(BaseModel):
+    """Catalog-level PDF Collection metadata; no navigator is executed."""
+
+    object_reference: str = Field(default="", max_length=64)
+    view: str = Field(default="", max_length=64)
+    initial_document: str = Field(default="", max_length=512)
+    schema_fields: list[PdfCollectionField] = Field(
+        default_factory=list,
+        max_length=1_000,
+    )
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfRichMediaAnnotation(BaseModel):
+    """Inert structural facts about one RichMedia annotation."""
+
+    object_reference: str = Field(default="", max_length=64)
+    locations: list[str] = Field(default_factory=list, max_length=1_000)
+    asset_names: list[str] = Field(default_factory=list, max_length=1_000)
+    configuration_count: int = Field(default=0, ge=0)
+    instance_count: int = Field(default=0, ge=0)
+    script_count: int = Field(default=0, ge=0)
+    activation_condition: str = Field(default="", max_length=255)
+    deactivation_condition: str = Field(default="", max_length=255)
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfThreeDAnnotation(BaseModel):
+    """Bounded, non-rendering facts about one PDF 3D annotation and stream."""
+
+    object_reference: str = Field(default="", max_length=64)
+    locations: list[str] = Field(default_factory=list, max_length=1_000)
+    stream_object_reference: str = Field(default="", max_length=64)
+    stream_subtype: str = Field(default="", max_length=64)
+    stream_size_bytes: int | None = Field(default=None, ge=0)
+    stream_sha256: str = Field(default="", pattern=r"^$|^[0-9a-f]{64}$")
+    view_count: int = Field(default=0, ge=0)
+    node_names: list[str] = Field(default_factory=list, max_length=10_000)
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfLogicalStructureFacts(BaseModel):
+    """Counts of publisher-supplied logical and optional-content structures."""
+
+    tagged: bool = False
+    structure_element_count: int = Field(default=0, ge=0)
+    marked_content_reference_count: int = Field(default=0, ge=0)
+    marked_content_id_count: int = Field(default=0, ge=0)
+    object_reference_count: int = Field(default=0, ge=0)
+    optional_content_group_count: int = Field(default=0, ge=0)
+    associated_file_link_count: int = Field(default=0, ge=0)
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfSignature(BaseModel):
+    """Unverified structural claims and apparent revision coverage for a signature."""
+
+    object_reference: str = Field(default="", max_length=64)
+    subfilter: str = Field(default="", max_length=255)
+    byte_range: list[int] = Field(default_factory=list, max_length=32)
+    claimed_name: str = Field(default="", max_length=1_000)
+    claimed_reason: str = Field(default="", max_length=2_000)
+    claimed_location: str = Field(default="", max_length=2_000)
+    claimed_signing_time: str = Field(default="", max_length=255)
+    claimed_contact_info: str = Field(default="", max_length=1_000)
+    apparent_signed_revision_bytes: int | None = Field(default=None, ge=0)
+    apparently_covers_current_file: bool = False
+
+    model_config = {"extra": "forbid"}
 
 
 class PdfPayloadSelector(BaseModel):
@@ -55,24 +177,32 @@ class PdfPayloadSelector(BaseModel):
 class PdfProcessingLimits(BaseModel):
     """Backend-enforced limits, already clamped by the application."""
 
-    max_input_bytes: int = Field(default=100_000_000, gt=0, le=250_000_000)
+    max_input_bytes: int = Field(default=104_857_600, gt=0, le=262_144_000)
     max_pages: int = Field(default=2_000, gt=0, le=10_000)
     max_objects: int = Field(default=250_000, gt=0, le=1_000_000)
     max_object_depth: int = Field(default=128, gt=0, le=256)
     max_member_references: int = Field(default=100, gt=0, le=1_000)
-    max_member_bytes: int = Field(default=50_000_000, gt=0, le=250_000_000)
+    max_member_bytes: int = Field(default=52_428_800, gt=0, le=262_144_000)
     max_total_member_bytes: int = Field(
-        default=250_000_000,
+        default=262_144_000,
         gt=0,
-        le=1_000_000_000,
+        le=1_073_741_824,
     )
-    max_xmp_bytes: int = Field(default=5_000_000, gt=0, le=20_000_000)
+    max_decode_ratio: int = Field(default=200, gt=0, le=1_000)
+    max_xmp_bytes: int = Field(default=5_242_880, gt=0, le=20_971_520)
+    max_action_entries: int = Field(default=10_000, gt=0, le=100_000)
     max_findings: int = Field(default=1_000, gt=0, le=10_000)
     max_inventory_bytes: int = Field(
-        default=25_000_000,
+        default=26_214_400,
         ge=10_000,
-        le=100_000_000,
+        le=104_857_600,
     )
+    max_output_bundle_bytes: int = Field(
+        default=314_572_800,
+        gt=0,
+        le=1_073_741_824,
+    )
+    max_execution_seconds: int = Field(default=60, gt=0, le=300)
 
     model_config = {"extra": "forbid"}
 
@@ -143,6 +273,7 @@ class PdfMember(BaseModel):
     af_relationships: list[str] = Field(default_factory=list)
     rich_media_asset_names: list[str] = Field(default_factory=list)
     xml_root_qname: str = ""
+    step_file_schema: list[str] = Field(default_factory=list, max_length=128)
     encoded_size_bytes: int | None = Field(default=None, ge=0)
     decoded_size_bytes: int = Field(ge=0)
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -157,16 +288,22 @@ class PdfMember(BaseModel):
 class PdfInventory(BaseModel):
     """Canonical public inventory for one inspected PDF package."""
 
-    schema_version: Literal["validibot.pdf_inventory.v1"] = PDF_INVENTORY_SCHEMA_VERSION
+    schema_version: Literal["validibot.pdf_inventory.v2"] = PDF_INVENTORY_SCHEMA_VERSION
     source: PdfInventorySource
     parser: PdfParserInfo
     pdf: PdfDocumentFacts
-    extensions: list[dict[str, Any]] = Field(default_factory=list)
-    requirements: list[dict[str, Any]] = Field(default_factory=list)
-    declarations: list[dict[str, Any]] = Field(default_factory=list)
+    extensions: list[PdfExtension] = Field(default_factory=list)
+    requirements: list[PdfRequirement] = Field(default_factory=list)
+    declarations: list[PdfDeclaration] = Field(default_factory=list)
+    collections: list[PdfCollection] = Field(default_factory=list)
+    rich_media: list[PdfRichMediaAnnotation] = Field(default_factory=list)
+    three_d: list[PdfThreeDAnnotation] = Field(default_factory=list)
+    logical_structure: PdfLogicalStructureFacts = Field(
+        default_factory=PdfLogicalStructureFacts,
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
     interactive_features: dict[str, Any] = Field(default_factory=dict)
-    signatures: list[dict[str, Any]] = Field(default_factory=list)
+    signatures: list[PdfSignature] = Field(default_factory=list)
     members: list[PdfMember] = Field(default_factory=list)
     profile_results: list[dict[str, Any]] = Field(default_factory=list)
     limits: dict[str, int] = Field(default_factory=dict)

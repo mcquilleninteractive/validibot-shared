@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-08-11
+
+### Added
+
+- Define the complete PDF processing budget, including decoded expansion,
+  active-entry, output-bundle, and execution-time limits.
+- Add typed PDF Collection, RichMedia, 3D, logical-structure, declaration,
+  extension, requirement, signature, and STEP `FILE_SCHEMA` inventory records.
+
+### Changed
+
+- Replace the unreleased PDF inventory V1 shape with the single strict
+  `validibot.pdf_inventory.v2` contract used by the application and backend.
+- Express PDF byte budgets as the binary MiB and GiB values documented by the
+  architecture decision.
+
+### Notes
+
+- This is an intentional clean break before the first PDF backend publication.
+  The application and all validator backends must move directly to 0.27.0; no
+  V1 PDF inventory compatibility reader is provided.
+
 ## [0.26.0] - 2026-08-10
 
 ### Added
