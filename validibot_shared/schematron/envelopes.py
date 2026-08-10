@@ -279,7 +279,8 @@ def build_schematron_input_envelope(
         InputFileItem(
             name="submission.xml",
             mime_type=SupportedMimeType.APPLICATION_XML,
-            role="primary-model",
+            role="xml-document",
+            port_key="xml_document",
             uri=submission_uri,
             size_bytes=submission_size_bytes,
             sha256=submission_sha256,

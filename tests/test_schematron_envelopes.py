@@ -220,5 +220,6 @@ def test_build_schematron_input_envelope_assembles_the_xml_submission():
     file_item = envelope.input_files[0]
     assert file_item.name == "submission.xml"
     assert file_item.mime_type == SupportedMimeType.APPLICATION_XML
-    assert file_item.role == "primary-model"
+    assert file_item.role == "xml-document"
+    assert file_item.port_key == "xml_document"
     assert envelope.inputs.schematron_text == SCH_SOURCE

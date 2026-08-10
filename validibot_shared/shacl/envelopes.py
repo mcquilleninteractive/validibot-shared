@@ -327,7 +327,8 @@ def build_shacl_input_envelope(
         InputFileItem(
             name="submission.rdf",
             mime_type=mime_type_for_rdf_format(inputs.rdf_format),
-            role="primary-model",
+            role="data-graph",
+            port_key="data_graph",
             uri=submission_uri,
             size_bytes=submission_size_bytes,
             sha256=submission_sha256,
