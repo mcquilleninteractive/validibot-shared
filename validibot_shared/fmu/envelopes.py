@@ -177,6 +177,7 @@ def build_fmu_input_envelope(
             name="model.fmu",
             mime_type=SupportedMimeType.FMU,
             role="fmu",
+            port_key="fmu_model",
             uri=fmu_uri,
             size_bytes=fmu_size_bytes,
             sha256=fmu_sha256,

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-08-10
+
+### Added
+
+- Add shared input-file and resource-file selectors that resolve singleton
+  envelope ports by their stable `port_key`, use the older role/type only when
+  an item has no port key, and reject missing or ambiguous inputs without
+  depending on file-list order.
+
+### Changed
+
+- Make the FMU, SHACL, and Schematron envelope builders identify their primary
+  files with the declared `fmu_model`, `data_graph`, and `xml_document` port
+  keys and matching backend roles.
+
+### Notes
+
+- Validator backends should adopt these selectors together so Django and every
+  isolated runner interpret the shared file-port contract consistently.
+
 ## [0.25.0] - 2026-08-07
 
 ### Added

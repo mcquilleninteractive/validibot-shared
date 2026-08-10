@@ -180,7 +180,8 @@ def test_build_shacl_input_envelope_constructs_expected_payload():
     )
 
     assert envelope.input_files[0].uri == "gs://bucket/submission.jsonld"
-    assert envelope.input_files[0].role == "primary-model"
+    assert envelope.input_files[0].role == "data-graph"
+    assert envelope.input_files[0].port_key == "data_graph"
     assert envelope.input_files[0].mime_type == SupportedMimeType.RDF_JSON_LD
     assert envelope.validator.version == "2"
     assert envelope.context.skip_callback is True

@@ -123,6 +123,7 @@ def test_build_fmu_input_envelope_constructs_expected_payload():
 
     assert envelope.inputs.output_variables == ["y"]
     assert envelope.input_files[0].role == "fmu"
+    assert envelope.input_files[0].port_key == "fmu_model"
     assert str(envelope.context.callback_url) == "https://example.com/callback"
 
 
