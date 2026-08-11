@@ -262,9 +262,8 @@ class SHACLOutputEnvelope(ValidationOutputEnvelope):
     outputs: SHACLOutputs | None = None
 
 
-# Default file role/MIME for the submitted RDF graph. The role mirrors the
-# "primary-model" convention used by EnergyPlus; the container reads
-# input_files[0].uri regardless of role.
+# Default descriptive role and MIME for the submitted RDF graph. The backend
+# selects this item through its required ``data_graph`` port key.
 _RDF_FORMAT_TO_MIME: dict[str, SupportedMimeType] = {
     "turtle": SupportedMimeType.RDF_TURTLE,
     "n3": SupportedMimeType.RDF_TURTLE,

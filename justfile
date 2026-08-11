@@ -48,7 +48,7 @@ audit:
         --output-file "$REQUIREMENTS_FILE"
     uvx --from pip-audit==2.10.1 pip-audit \
         --requirement "$REQUIREMENTS_FILE" \
-        --no-deps \
+        --require-hashes \
         --disable-pip \
         --strict
 

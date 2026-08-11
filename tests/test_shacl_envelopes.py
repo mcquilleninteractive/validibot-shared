@@ -144,12 +144,7 @@ def test_shacl_input_envelope_forbids_unknown_fields():
 
 
 def test_build_shacl_input_envelope_constructs_expected_payload():
-    """The helper wires the submission file, role, and MIME type correctly.
-
-    The container reads ``input_files[0].uri`` to fetch the RDF graph, and the
-    MIME type is derived from the resolved rdflib format — this proves the helper
-    produces a fetchable, correctly-typed input file.
-    """
+    """The helper gives the data-graph port a fetchable, typed file identity."""
     inputs = SHACLInputs(
         shapes_text="@prefix sh: <http://www.w3.org/ns/shacl#> .",
         rdf_format="json-ld",
