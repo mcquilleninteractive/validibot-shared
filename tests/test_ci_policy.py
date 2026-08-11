@@ -12,6 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 UV_LOCK = REPO_ROOT / "uv.lock"
+JUSTFILE = REPO_ROOT / "justfile"
 
 SETUP_UV_SHA = "c771a70e6277c0a99b617c7a806ffedaca235ff9"
 CODEQL_ACTION_SHA = "f205ea1c3313d32999d8d6a48b4f6530d4437b38"
@@ -70,3 +71,27 @@ def test_codeql_scans_python_as_a_required_ci_prerequisite():
     assert f"github/codeql-action/analyze@{CODEQL_ACTION_SHA}" in codeql_job
     assert "languages: python" in codeql_job
     assert "build-mode: none" in codeql_job
+
+
+def test_local_commands_use_the_frozen_development_environment():
+    """Fresh-checkout checks must not depend on ambient tools or rewrite the lock."""
+    justfile = JUSTFILE.read_text(encoding="utf-8")
+
+    assert "uv run --frozen --extra dev python -m pytest" in justfile
+    assert "uv run --frozen --extra dev ruff check ." in justfile
+    assert "uv run --frozen --extra dev ruff format --check ." in justfile
+    assert "check: lock-check format-check lint test" in justfile
+    assert "uv lock --check" in justfile
+
+
+def test_release_requires_locked_audit_and_exact_commit_ci():
+    """A direct push must not become releasable before its own CI succeeds."""
+    justfile = JUSTFILE.read_text(encoding="utf-8")
+
+    assert "release-check: check audit _require-release-ci" in justfile
+    assert "--workflow ci.yml" in justfile
+    assert '--commit "$HEAD_SHA"' in justfile
+    assert "--event push" in justfile
+    assert 'gh run watch "$RUN_ID"' in justfile
+    assert "just release-check" in justfile
+    assert "Release checks changed the working tree" in justfile

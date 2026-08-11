@@ -152,6 +152,7 @@ class PdfPayloadSelector(BaseModel):
     af_relationship: str = Field(default="", max_length=128)
     rich_media_asset_name: str = Field(default="", max_length=512)
     xml_root_qname: str = Field(default="", max_length=1024)
+    step_file_schema: list[str] = Field(default_factory=list, max_length=128)
 
     model_config = {"extra": "forbid"}
 
@@ -167,6 +168,7 @@ class PdfPayloadSelector(BaseModel):
                 self.af_relationship,
                 self.rich_media_asset_name,
                 self.xml_root_qname,
+                self.step_file_schema,
             )
         ):
             msg = "A PDF payload selector must define at least one exact match key."

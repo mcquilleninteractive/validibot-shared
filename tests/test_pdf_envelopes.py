@@ -36,6 +36,17 @@ def test_xml_root_qname_is_a_valid_semantic_selector() -> None:
     assert inputs.selected_xml.xml_root_qname == "{urn:example:asset}handover"
 
 
+def test_step_file_schema_is_a_valid_exact_selector() -> None:
+    """A STEP member can be selected by its bounded Part 21 header identity."""
+    selector = PdfPayloadSelector(
+        step_file_schema=["AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF"],
+    )
+
+    assert selector.step_file_schema == [
+        "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF"
+    ]
+
+
 def test_inventory_rejects_unknown_fields() -> None:
     """A backend cannot silently invent fields outside the public V2 schema."""
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):

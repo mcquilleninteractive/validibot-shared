@@ -260,8 +260,9 @@ class InputFileItem(IntegrityBoundFile):
     """
     A user-submitted file input for the validator.
 
-    Files are stored in GCS/local storage and referenced by URI. The 'role' field
-    allows validators to understand what each file is for (e.g., 'primary-model').
+    Files are stored in GCS/local storage and referenced by URI. ``port_key`` is
+    the required stable identity used to resolve each declared validator input.
+    ``role`` may add descriptive backend metadata but never selects the file.
 
     Note: Auxiliary files like weather files are in resource_files, not input_files.
     """
@@ -275,8 +276,9 @@ class InputFileItem(IntegrityBoundFile):
         description="Validator-specific role (e.g., 'primary-model', 'config')",
     )
 
-    port_key: str | None = Field(
-        default=None,
+    port_key: str = Field(
+        min_length=1,
+        max_length=255,
         description=(
             "Declared Validibot file-port key that produced this envelope item "
             "(e.g., 'primary_model')."
@@ -304,8 +306,8 @@ class ResourceFileItem(IntegrityBoundFile):
     Unlike InputFileItem (which is per-submission), resource files are reusable
     across validations and managed via the Validator Library UI in Django.
 
-    The 'type' field indicates what kind of resource this is (weather, library, etc.)
-    and validators use this to locate the appropriate file for their needs.
+    ``port_key`` identifies the declared resource port. ``type`` records the
+    resource's domain category but is not a selection fallback.
     """
 
     id: str = Field(description="Resource file UUID from Django database")
@@ -316,8 +318,9 @@ class ResourceFileItem(IntegrityBoundFile):
         description="Resource type (e.g., 'weather', 'library', 'config')"
     )
 
-    port_key: str | None = Field(
-        default=None,
+    port_key: str = Field(
+        min_length=1,
+        max_length=255,
         description=(
             "Declared Validibot file-port key that produced this resource item "
             "(e.g., 'weather_file')."

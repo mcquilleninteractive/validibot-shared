@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   active-entry, output-bundle, and execution-time limits.
 - Add typed PDF Collection, RichMedia, 3D, logical-structure, declaration,
   extension, requirement, signature, and STEP `FILE_SCHEMA` inventory records.
+- Allow an exact STEP `FILE_SCHEMA` identity in typed PDF member selectors.
 
 ### Changed
 
@@ -20,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `validibot.pdf_inventory.v2` contract used by the application and backend.
 - Express PDF byte budgets as the binary MiB and GiB values documented by the
   architecture decision.
+- Make `port_key` required on every input and resource file item and remove
+  role/type compatibility lookup. Named contract keys are now the only file
+  selection identity.
 
 ### Notes
 

@@ -86,13 +86,21 @@ jobs:
         run: uv sync --frozen --extra dev --python ${{ matrix.python-version }}
 
       - name: Run linting
-        run: uv run --python ${{ matrix.python-version }} ruff check .
+        run: >-
+          uv run --frozen --extra dev --python ${{ matrix.python-version }}
+          ruff check .
 
       - name: Run formatting check
-        run: uv run --python ${{ matrix.python-version }} ruff format --check .
+        run: >-
+          uv run --frozen --extra dev --python ${{ matrix.python-version }}
+          ruff format --check .
 
       - name: Run tests
-        run: uv run --python ${{ matrix.python-version }} pytest
+        env:
+          HYPOTHESIS_PROFILE: ci
+        run: >-
+          uv run --frozen --extra dev --python ${{ matrix.python-version }}
+          pytest
 
   deps:
     name: deps (lock + audit)
@@ -110,11 +118,13 @@ jobs:
       - name: Audit the locked dependency set for known vulnerabilities
         run: |
           uv export --frozen --no-emit-project \
+            --quiet \
             --format requirements-txt -o requirements-audit.txt
           uvx --from pip-audit==2.10.1 pip-audit \
             -r requirements-audit.txt \
             --no-deps \
-            --disable-pip
+            --disable-pip \
+            --strict
 
   ci:
     name: ci

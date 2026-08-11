@@ -58,9 +58,16 @@ All third-party actions in the workflow are pinned to full commit SHAs.
    ```
 
 The recipe refuses dirty trees, non-`main` branches, and a local branch that
-does not exactly match `origin/main`. It runs the local release gate, creates
-and locally verifies a signed tag, pushes that tag, and publishes the GitHub
-Release.
+does not exactly match `origin/main`. It runs `just release-check`, which
+combines the frozen local gate, an explicit locked-runtime dependency audit,
+and the successful `ci.yml` push run for the exact release commit. It then
+confirms the checks left the worktree clean, creates and locally verifies a
+signed tag, pushes that tag, and publishes the GitHub Release.
+
+Run `just release-check` alone to inspect every prerequisite without creating a
+tag. `just check` is the deterministic subset: lock consistency, formatting,
+linting, and tests. `just audit` is separate because it queries the live
+vulnerability advisory service.
 
 Do not move or replace a published version tag. If a release workflow fails
 because its committed release code is defective, fix the pipeline and publish

@@ -47,6 +47,7 @@ def _base_input_envelope_kwargs():
                 name="model.idf",
                 mime_type=SupportedMimeType.ENERGYPLUS_IDF,
                 role="primary-model",
+                port_key="primary_model",
                 uri="gs://bucket/model.idf",
                 size_bytes=123,
                 sha256="1" * 64,
@@ -84,7 +85,7 @@ def test_validation_input_envelope_defaults_schema_version():
 
     assert envelope.schema_version == "validibot.input.v1"
     assert envelope.input_files[0].role == "primary-model"
-    assert envelope.input_files[0].port_key is None
+    assert envelope.input_files[0].port_key == "primary_model"
     assert envelope.inputs == {}
 
 
@@ -136,8 +137,8 @@ def test_strict_attempt_fixture_has_the_cross_repo_canonical_digest():
     )
 
 
-def test_input_file_item_accepts_optional_port_key():
-    """InputFileItem should carry declared file-port identity when available."""
+def test_input_file_item_requires_and_carries_port_key():
+    """Every submitted file must carry its declared selection identity."""
     item = InputFileItem(
         name="model.idf",
         mime_type=SupportedMimeType.ENERGYPLUS_IDF,
@@ -152,8 +153,8 @@ def test_input_file_item_accepts_optional_port_key():
     assert item.port_key == "primary_model"
 
 
-def test_resource_file_item_accepts_optional_port_key():
-    """ResourceFileItem should carry declared file-port identity when available."""
+def test_resource_file_item_requires_and_carries_port_key():
+    """Every resource file must carry its declared selection identity."""
     item = ResourceFileItem(
         id="resource-1",
         name="weather.epw",
@@ -175,6 +176,7 @@ def test_input_file_item_forbids_extra_fields():
             name="model.idf",
             mime_type=SupportedMimeType.ENERGYPLUS_IDF,
             role="primary-model",
+            port_key="primary_model",
             uri="gs://bucket/model.idf",
             size_bytes=123,
             sha256="1" * 64,
@@ -190,6 +192,7 @@ def test_input_file_item_requires_every_integrity_field(missing):
         "name": "model.idf",
         "mime_type": SupportedMimeType.ENERGYPLUS_IDF,
         "role": "primary-model",
+        "port_key": "primary_model",
         "uri": "gs://bucket/model.idf",
         "size_bytes": 123,
         "sha256": "1" * 64,
@@ -208,6 +211,7 @@ def test_file_item_names_must_be_safe_leaf_names(name):
         InputFileItem(
             name=name,
             mime_type=SupportedMimeType.ENERGYPLUS_IDF,
+            port_key="primary_model",
             uri="gs://bucket/model.idf",
             size_bytes=123,
             sha256="1" * 64,
@@ -221,6 +225,7 @@ def test_file_item_rejects_malformed_integrity_values():
         InputFileItem(
             name="model.idf",
             mime_type=SupportedMimeType.ENERGYPLUS_IDF,
+            port_key="primary_model",
             uri="gs://bucket/model.idf",
             size_bytes=-1,
             sha256="not-a-sha256",

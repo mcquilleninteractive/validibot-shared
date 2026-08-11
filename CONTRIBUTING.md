@@ -24,8 +24,8 @@ You confirm that you have the right to grant this license for your contributions
 # Install dependencies
 uv sync --extra dev
 
-# Run tests
-uv run pytest
+# Run the deterministic suite, including bounded security properties
+just test
 
 # Run linter
 uv run ruff check .
@@ -40,6 +40,23 @@ uv run mypy src/
 - Include tests for new or modified models
 - Ensure all checks pass before submitting
 - Write a clear PR description explaining the "why" behind the change
+
+## Security Property Tests
+
+The Hypothesis suite exercises the canonical JSON, callback nonce, envelope,
+file-port, and SVRL contracts with bounded generated inputs. CI selects the
+`ci` profile (75 examples per property with a 500 ms per-example deadline).
+Run the same profile locally when reproducing CI:
+
+```bash
+HYPOTHESIS_PROFILE=ci just test tests/test_security_properties.py
+```
+
+Rejected malformed inputs are expected outcomes when they raise the public
+contract's documented exceptions. Unexpected exceptions, hangs, resource
+exhaustion, or broken invariants are bugs. When Hypothesis minimizes a genuine
+bug, add a named regression test explaining the security impact rather than
+committing an unreviewed generated corpus.
 
 ## Adding a New Validator Schema
 

@@ -1,8 +1,8 @@
 """Tests for deterministic named-file selection from shared envelopes.
 
 The file lists cross a process boundary and must therefore be treated as
-untrusted. These tests protect the stable ``port_key`` lookup, compatibility
-with envelopes that genuinely predate it, and fail-closed cardinality rules.
+untrusted. These tests protect the sole stable ``port_key`` lookup and its
+fail-closed cardinality rules.
 """
 
 import pytest
@@ -22,7 +22,7 @@ from validibot_shared.validations.file_ports import (
 def _input_file(
     *,
     name: str,
-    port_key: str | None,
+    port_key: str,
     role: str | None,
 ) -> InputFileItem:
     """Build one integrity-complete input item for matcher tests."""
@@ -41,7 +41,7 @@ def _input_file(
 def _resource_file(
     *,
     name: str,
-    port_key: str | None,
+    port_key: str,
     resource_type: str,
 ) -> ResourceFileItem:
     """Build one integrity-complete resource item for matcher tests."""
@@ -69,31 +69,13 @@ def test_input_port_key_selects_the_named_item_independent_of_order() -> None:
     selected = select_input_file(
         [side_file, document],
         port_key="xml_document",
-        legacy_role="xml-document",
     )
 
     assert selected is document
 
 
-def test_keyless_input_can_use_its_legacy_role() -> None:
-    """A schema-valid older envelope remains usable when its key is absent."""
-    document = _input_file(
-        name="document.xml",
-        port_key=None,
-        role="xml-document",
-    )
-
-    selected = select_input_file(
-        [document],
-        port_key="xml_document",
-        legacy_role="xml-document",
-    )
-
-    assert selected is document
-
-
-def test_conflicting_port_key_cannot_be_overridden_by_legacy_role() -> None:
-    """An explicit different key wins over a misleading older role label."""
+def test_role_cannot_override_a_different_port_key() -> None:
+    """A misleading descriptive role cannot reclassify a named file port."""
     conflicting = _input_file(
         name="wrong.xml",
         port_key="different_port",
@@ -104,28 +86,18 @@ def test_conflicting_port_key_cannot_be_overridden_by_legacy_role() -> None:
         select_input_file(
             [conflicting],
             port_key="xml_document",
-            legacy_role="xml-document",
         )
 
 
-def test_duplicate_canonical_and_keyless_legacy_claims_are_ambiguous() -> None:
+def test_duplicate_port_keys_are_ambiguous() -> None:
     """Two files claiming one singleton port must fail rather than pick one."""
-    canonical = _input_file(
-        name="canonical.xml",
-        port_key="xml_document",
-        role=None,
-    )
-    legacy = _input_file(
-        name="legacy.xml",
-        port_key=None,
-        role="xml-document",
-    )
+    first = _input_file(name="first.xml", port_key="xml_document", role=None)
+    second = _input_file(name="second.xml", port_key="xml_document", role=None)
 
     with pytest.raises(FilePortLookupError, match="ambiguous; found 2"):
         select_input_file(
-            [canonical, legacy],
+            [first, second],
             port_key="xml_document",
-            legacy_role="xml-document",
         )
 
 
@@ -140,25 +112,22 @@ def test_optional_resource_returns_none_when_no_item_claims_the_port() -> None:
     selected = select_resource_file(
         [unrelated],
         port_key="expected_buildings_list",
-        legacy_type="portfolio_manager_ebl_v1",
         required=False,
     )
 
     assert selected is None
 
 
-def test_keyless_resource_can_use_its_legacy_type() -> None:
-    """Resource envelopes without a key retain their documented fallback."""
+def test_resource_type_cannot_replace_the_declared_port_key() -> None:
+    """A matching domain type is not accepted when the resource port differs."""
     expected_buildings = _resource_file(
         name="expected.json",
-        port_key=None,
+        port_key="other_resource",
         resource_type="portfolio_manager_ebl_v1",
     )
 
-    selected = select_resource_file(
-        [expected_buildings],
-        port_key="expected_buildings_list",
-        legacy_type="portfolio_manager_ebl_v1",
-    )
-
-    assert selected is expected_buildings
+    with pytest.raises(FilePortLookupError, match="was not found"):
+        select_resource_file(
+            [expected_buildings],
+            port_key="expected_buildings_list",
+        )
