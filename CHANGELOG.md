@@ -11,12 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Make `static_text_package_v1` the sole accepted PDF processing policy and
   reject the former inventory and safe-static policy names at envelope parsing.
+- Name the fixed setting and its inventory result consistently as `policy` and
+  `policy_results`; remove the unreleased `profile` wire terminology.
 - Restrict PDF member selectors to EmbeddedFiles, Associated Files, and
   FileAttachment discovery routes.
 - Remove RichMedia asset selection from the PDF wire contract. RichMedia may
   be detected as prohibited structure but can no longer become an extracted
   member or selected artifact.
-- Constrain public member discovery kinds and profile results to the fixed
+- Constrain public member discovery kinds and policy results to the fixed
   policy, remove digital-signature output, and reduce Collection, RichMedia,
   and 3D records to shallow facts used only to explain rejection.
 

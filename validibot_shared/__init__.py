@@ -23,7 +23,7 @@ from validibot_shared.evidence import (
 from validibot_shared.fmu.models import FMUProbeResult, FMUVariableMeta
 from validibot_shared.pdf import (
     PDF_INVENTORY_SCHEMA_VERSION,
-    PDF_STATIC_TEXT_PROFILE,
+    PDF_STATIC_TEXT_POLICY,
     PdfDocumentFacts,
     PdfInputEnvelope,
     PdfInputs,
@@ -70,7 +70,7 @@ __all__ = [
     "PortfolioManagerOutputs",
     "PortfolioManagerPropertyResult",
     "PDF_INVENTORY_SCHEMA_VERSION",
-    "PDF_STATIC_TEXT_PROFILE",
+    "PDF_STATIC_TEXT_POLICY",
     "PdfInputEnvelope",
     "PdfInputs",
     "PdfInventory",

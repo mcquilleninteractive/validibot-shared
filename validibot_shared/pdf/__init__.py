@@ -2,7 +2,7 @@
 
 from validibot_shared.pdf.envelopes import (
     PDF_INVENTORY_SCHEMA_VERSION,
-    PDF_STATIC_TEXT_PROFILE,
+    PDF_STATIC_TEXT_POLICY,
     PdfCollection,
     PdfDeclaration,
     PdfDiscoveryKind,
@@ -18,8 +18,8 @@ from validibot_shared.pdf.envelopes import (
     PdfOutputs,
     PdfParserInfo,
     PdfPayloadSelector,
+    PdfPolicyResult,
     PdfProcessingLimits,
-    PdfProfileResult,
     PdfRequirement,
     PdfRichMediaAnnotation,
     PdfThreeDAnnotation,
@@ -27,7 +27,7 @@ from validibot_shared.pdf.envelopes import (
 
 __all__ = [
     "PDF_INVENTORY_SCHEMA_VERSION",
-    "PDF_STATIC_TEXT_PROFILE",
+    "PDF_STATIC_TEXT_POLICY",
     "PdfCollection",
     "PdfDeclaration",
     "PdfDocumentFacts",
@@ -44,7 +44,7 @@ __all__ = [
     "PdfParserInfo",
     "PdfPayloadSelector",
     "PdfProcessingLimits",
-    "PdfProfileResult",
+    "PdfPolicyResult",
     "PdfRequirement",
     "PdfRichMediaAnnotation",
     "PdfThreeDAnnotation",

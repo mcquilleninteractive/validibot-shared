@@ -18,7 +18,7 @@ from validibot_shared.validations.envelopes import (
 )
 
 PDF_INVENTORY_SCHEMA_VERSION = "validibot.pdf_inventory.v2"
-PDF_STATIC_TEXT_PROFILE = "static_text_package_v1"
+PDF_STATIC_TEXT_POLICY = "static_text_package_v1"
 
 PdfDiscoveryKind = Literal[
     "embedded_files_name_tree",
@@ -173,7 +173,7 @@ class PdfProcessingLimits(BaseModel):
 class PdfInputs(BaseModel):
     """Fixed static-text PDF inspection and typed-extraction configuration."""
 
-    profile: Literal["static_text_package_v1"] = PDF_STATIC_TEXT_PROFILE
+    policy: Literal["static_text_package_v1"] = PDF_STATIC_TEXT_POLICY
     emit_extracted_files_bundle: bool = False
     selected_xml: PdfPayloadSelector | None = None
     selected_json: PdfPayloadSelector | None = None
@@ -247,10 +247,10 @@ class PdfMember(BaseModel):
     model_config = {"extra": "forbid"}
 
 
-class PdfProfileResult(BaseModel):
+class PdfPolicyResult(BaseModel):
     """Result of the sole fixed PDF security policy."""
 
-    profile: Literal["static_text_package_v1"] = PDF_STATIC_TEXT_PROFILE
+    policy: Literal["static_text_package_v1"] = PDF_STATIC_TEXT_POLICY
     passed: bool
 
     model_config = {"extra": "forbid"}
@@ -275,7 +275,7 @@ class PdfInventory(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     interactive_features: dict[str, Any] = Field(default_factory=dict)
     members: list[PdfMember] = Field(default_factory=list)
-    profile_results: list[PdfProfileResult] = Field(default_factory=list, max_length=1)
+    policy_results: list[PdfPolicyResult] = Field(default_factory=list, max_length=1)
     limits: dict[str, int] = Field(default_factory=dict)
     finding_summary: dict[str, int] = Field(default_factory=dict)
 
