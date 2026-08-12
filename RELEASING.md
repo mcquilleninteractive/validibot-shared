@@ -26,6 +26,12 @@ The `pypi` GitHub environment must be restricted to `v*` tags with
 administrator bypass disabled. Publishing is release-only: there is no
 manual-dispatch or TestPyPI route in the production workflow.
 
+GitHub repository settings must also have immutable releases enabled before a
+new release is cut. This setting applies only to future releases, so it cannot
+retrofit immutability onto an existing release such as 0.28.0. Only the
+maintainer changes this account-level control; verify it under repository
+Settings → Releases as part of release readiness.
+
 Signed commits are intentionally not required in this public repository.
 Protected `main`, required pull requests, and required CI govern source
 integration. Release signing is a separate boundary: every published release
