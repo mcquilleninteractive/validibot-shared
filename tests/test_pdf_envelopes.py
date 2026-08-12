@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from validibot_shared.pdf import (
     PDF_INVENTORY_SCHEMA_VERSION,
+    PDF_STATIC_TEXT_PROFILE,
     PdfInputs,
     PdfInventory,
     PdfPayloadSelector,
@@ -22,6 +23,29 @@ def test_selector_requires_an_explicit_exact_match_key() -> None:
     """An empty selector must never degrade into implicit first-member choice."""
     with pytest.raises(ValidationError, match="at least one exact match key"):
         PdfPayloadSelector()
+
+
+def test_static_text_is_the_only_accepted_pdf_policy() -> None:
+    """No caller may downgrade PDF processing to a permissive inventory mode."""
+    assert PdfInputs().profile == PDF_STATIC_TEXT_PROFILE
+
+    for legacy_profile in ("inventory_v1", "safe_static_package_v1"):
+        with pytest.raises(ValidationError, match="static_text_package_v1"):
+            PdfInputs(profile=legacy_profile)
+
+
+def test_selector_rejects_discovery_routes_outside_the_static_policy() -> None:
+    """RichMedia and free-floating file specs cannot become extraction selectors."""
+    with pytest.raises(ValidationError, match="Input should be"):
+        PdfPayloadSelector(discovery_kinds=["rich_media_asset"])
+
+
+def test_selector_rejects_removed_rich_media_fields() -> None:
+    """The strict contract must not retain a hidden RichMedia extraction path."""
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        PdfPayloadSelector(
+            rich_media_asset_name="asset-index",
+        )
 
 
 def test_xml_root_qname_is_a_valid_semantic_selector() -> None:
@@ -60,8 +84,8 @@ def test_inventory_rejects_unknown_fields() -> None:
         )
 
 
-def test_inventory_v2_has_typed_homes_for_every_generic_pdf_mechanism() -> None:
-    """The public inventory cannot hide promised mechanisms in ad-hoc dictionaries."""
+def test_inventory_v2_keeps_prohibited_mechanisms_as_shallow_typed_evidence() -> None:
+    """Rejected Collection, RichMedia, and 3D structures stay shallow and typed."""
     inventory = PdfInventory.model_validate(
         {
             "source": {"name": "a.pdf", "size_bytes": 1, "sha256": "a" * 64},
@@ -71,10 +95,10 @@ def test_inventory_v2_has_typed_homes_for_every_generic_pdf_mechanism() -> None:
             "requirements": [{"position": 0, "subtype": "AP242"}],
             "declarations": [{"identifier": "urn:example:profile:v1"}],
             "collections": [{"view": "D"}],
-            "rich_media": [{"configuration_count": 1}],
+            "rich_media": [{"locations": ["catalog/Pages/0/Annots/0"]}],
             "three_d": [{"stream_subtype": "PRC"}],
             "logical_structure": {"tagged": True, "structure_element_count": 1},
-            "signatures": [{"byte_range": [0, 10, 20, 30]}],
+            "profile_results": [{"profile": "static_text_package_v1", "passed": False}],
         }
     )
 
@@ -82,7 +106,20 @@ def test_inventory_v2_has_typed_homes_for_every_generic_pdf_mechanism() -> None:
     assert inventory.extensions[0].extension_revision == 2023
     assert inventory.declarations[0].identifier == "urn:example:profile:v1"
     assert inventory.logical_structure.tagged is True
-    assert inventory.signatures[0].byte_range == [0, 10, 20, 30]
+    assert inventory.profile_results[0].profile == PDF_STATIC_TEXT_PROFILE
+
+
+def test_inventory_rejects_non_static_profile_results() -> None:
+    """A backend output cannot claim evaluation under an unsupported policy."""
+    with pytest.raises(ValidationError, match="static_text_package_v1"):
+        PdfInventory.model_validate(
+            {
+                "source": {"name": "a.pdf", "size_bytes": 1, "sha256": "a" * 64},
+                "parser": {"engine": "qpdf/pikepdf"},
+                "pdf": {},
+                "profile_results": [{"profile": "inventory_v1", "passed": True}],
+            }
+        )
 
 
 def test_pdf_limits_match_the_documented_binary_budgets() -> None:

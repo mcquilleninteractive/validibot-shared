@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-08-12
+
+### Changed
+
+- Make `static_text_package_v1` the sole accepted PDF processing policy and
+  reject the former inventory and safe-static policy names at envelope parsing.
+- Restrict PDF member selectors to EmbeddedFiles, Associated Files, and
+  FileAttachment discovery routes.
+- Remove RichMedia asset selection from the PDF wire contract. RichMedia may
+  be detected as prohibited structure but can no longer become an extracted
+  member or selected artifact.
+- Constrain public member discovery kinds and profile results to the fixed
+  policy, remove digital-signature output, and reduce Collection, RichMedia,
+  and 3D records to shallow facts used only to explain rejection.
+
+### Notes
+
+- This is an intentional coordinated contract break before the PDF backend's
+  first production rollout. Application and backend releases must adopt 0.28.0
+  together; no permissive compatibility reader is provided.
+
 ## [0.27.0] - 2026-08-11
 
 ### Added

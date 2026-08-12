@@ -1,8 +1,9 @@
-"""Strict PDF package input, inventory, and output contracts.
+"""Strict static-text PDF package input, inventory, and output contracts.
 
-The PDF backend inventories standardized package mechanisms and may emit a few
-fixed singleton payloads for later workflow steps. It never renders the PDF or
-interprets an extracted XML/JSON/STEP payload as domain-conformant.
+The PDF backend has one fixed policy. It may inspect document XMP and package
+members carried as XML, JSON, or STEP Part 21 through a deliberately small set
+of standard attachment routes. It never renders the PDF, executes active
+content, or interprets an extracted carrier as domain-conformant.
 """
 
 from __future__ import annotations
@@ -17,6 +18,13 @@ from validibot_shared.validations.envelopes import (
 )
 
 PDF_INVENTORY_SCHEMA_VERSION = "validibot.pdf_inventory.v2"
+PDF_STATIC_TEXT_PROFILE = "static_text_package_v1"
+
+PdfDiscoveryKind = Literal[
+    "embedded_files_name_tree",
+    "associated_file",
+    "file_attachment_annotation",
+]
 
 
 class PdfExtension(BaseModel):
@@ -53,59 +61,31 @@ class PdfDeclaration(BaseModel):
     model_config = {"extra": "forbid"}
 
 
-class PdfCollectionField(BaseModel):
-    """One bounded field declared by a PDF Collection schema."""
-
-    name: str = Field(max_length=512)
-    subtype: str = Field(default="", max_length=64)
-    display_name: str = Field(default="", max_length=512)
-    order: int | None = None
-    visible: bool | None = None
-    editable: bool | None = None
-
-    model_config = {"extra": "forbid"}
-
-
 class PdfCollection(BaseModel):
-    """Catalog-level PDF Collection metadata; no navigator is executed."""
+    """Minimal Collection facts retained only to explain policy rejection."""
 
     object_reference: str = Field(default="", max_length=64)
     view: str = Field(default="", max_length=64)
-    initial_document: str = Field(default="", max_length=512)
-    schema_fields: list[PdfCollectionField] = Field(
-        default_factory=list,
-        max_length=1_000,
-    )
 
     model_config = {"extra": "forbid"}
 
 
 class PdfRichMediaAnnotation(BaseModel):
-    """Inert structural facts about one RichMedia annotation."""
+    """Minimal RichMedia facts retained only to explain policy rejection."""
 
     object_reference: str = Field(default="", max_length=64)
     locations: list[str] = Field(default_factory=list, max_length=1_000)
-    asset_names: list[str] = Field(default_factory=list, max_length=1_000)
-    configuration_count: int = Field(default=0, ge=0)
-    instance_count: int = Field(default=0, ge=0)
-    script_count: int = Field(default=0, ge=0)
-    activation_condition: str = Field(default="", max_length=255)
-    deactivation_condition: str = Field(default="", max_length=255)
 
     model_config = {"extra": "forbid"}
 
 
 class PdfThreeDAnnotation(BaseModel):
-    """Bounded, non-rendering facts about one PDF 3D annotation and stream."""
+    """Minimal 3D facts retained only to explain policy rejection."""
 
     object_reference: str = Field(default="", max_length=64)
     locations: list[str] = Field(default_factory=list, max_length=1_000)
     stream_object_reference: str = Field(default="", max_length=64)
     stream_subtype: str = Field(default="", max_length=64)
-    stream_size_bytes: int | None = Field(default=None, ge=0)
-    stream_sha256: str = Field(default="", pattern=r"^$|^[0-9a-f]{64}$")
-    view_count: int = Field(default=0, ge=0)
-    node_names: list[str] = Field(default_factory=list, max_length=10_000)
 
     model_config = {"extra": "forbid"}
 
@@ -124,33 +104,15 @@ class PdfLogicalStructureFacts(BaseModel):
     model_config = {"extra": "forbid"}
 
 
-class PdfSignature(BaseModel):
-    """Unverified structural claims and apparent revision coverage for a signature."""
-
-    object_reference: str = Field(default="", max_length=64)
-    subfilter: str = Field(default="", max_length=255)
-    byte_range: list[int] = Field(default_factory=list, max_length=32)
-    claimed_name: str = Field(default="", max_length=1_000)
-    claimed_reason: str = Field(default="", max_length=2_000)
-    claimed_location: str = Field(default="", max_length=2_000)
-    claimed_signing_time: str = Field(default="", max_length=255)
-    claimed_contact_info: str = Field(default="", max_length=1_000)
-    apparent_signed_revision_bytes: int | None = Field(default=None, ge=0)
-    apparently_covers_current_file: bool = False
-
-    model_config = {"extra": "forbid"}
-
-
 class PdfPayloadSelector(BaseModel):
     """Exact, deterministic selector for one optional typed output."""
 
     required: bool = False
-    discovery_kinds: list[str] = Field(default_factory=list, max_length=16)
+    discovery_kinds: list[PdfDiscoveryKind] = Field(default_factory=list, max_length=3)
     original_filename: str = Field(default="", max_length=512)
     declared_media_type: str = Field(default="", max_length=255)
     detected_media_type: str = Field(default="", max_length=255)
     af_relationship: str = Field(default="", max_length=128)
-    rich_media_asset_name: str = Field(default="", max_length=512)
     xml_root_qname: str = Field(default="", max_length=1024)
     step_file_schema: list[str] = Field(default_factory=list, max_length=128)
 
@@ -166,7 +128,6 @@ class PdfPayloadSelector(BaseModel):
                 self.declared_media_type,
                 self.detected_media_type,
                 self.af_relationship,
-                self.rich_media_asset_name,
                 self.xml_root_qname,
                 self.step_file_schema,
             )
@@ -210,9 +171,9 @@ class PdfProcessingLimits(BaseModel):
 
 
 class PdfInputs(BaseModel):
-    """Industry-neutral PDF inventory and typed-extraction configuration."""
+    """Fixed static-text PDF inspection and typed-extraction configuration."""
 
-    profile: Literal["inventory_v1", "safe_static_package_v1"] = "inventory_v1"
+    profile: Literal["static_text_package_v1"] = PDF_STATIC_TEXT_PROFILE
     emit_extracted_files_bundle: bool = False
     selected_xml: PdfPayloadSelector | None = None
     selected_json: PdfPayloadSelector | None = None
@@ -265,7 +226,7 @@ class PdfMember(BaseModel):
     """One deduplicated package-member byte sequence and its references."""
 
     member_id: str
-    discovery_kinds: list[str] = Field(default_factory=list)
+    discovery_kinds: list[PdfDiscoveryKind] = Field(default_factory=list)
     discovery_locations: list[str] = Field(default_factory=list)
     object_references: list[str] = Field(default_factory=list)
     original_names: list[str] = Field(default_factory=list)
@@ -273,7 +234,6 @@ class PdfMember(BaseModel):
     declared_media_type: str = ""
     detected_media_type: str = ""
     af_relationships: list[str] = Field(default_factory=list)
-    rich_media_asset_names: list[str] = Field(default_factory=list)
     xml_root_qname: str = ""
     step_file_schema: list[str] = Field(default_factory=list, max_length=128)
     encoded_size_bytes: int | None = Field(default=None, ge=0)
@@ -283,6 +243,15 @@ class PdfMember(BaseModel):
     refusal_reason: str = ""
     risk_flags: list[str] = Field(default_factory=list)
     selected_output_key: str = ""
+
+    model_config = {"extra": "forbid"}
+
+
+class PdfProfileResult(BaseModel):
+    """Result of the sole fixed PDF security policy."""
+
+    profile: Literal["static_text_package_v1"] = PDF_STATIC_TEXT_PROFILE
+    passed: bool
 
     model_config = {"extra": "forbid"}
 
@@ -305,9 +274,8 @@ class PdfInventory(BaseModel):
     )
     metadata: dict[str, Any] = Field(default_factory=dict)
     interactive_features: dict[str, Any] = Field(default_factory=dict)
-    signatures: list[PdfSignature] = Field(default_factory=list)
     members: list[PdfMember] = Field(default_factory=list)
-    profile_results: list[dict[str, Any]] = Field(default_factory=list)
+    profile_results: list[PdfProfileResult] = Field(default_factory=list, max_length=1)
     limits: dict[str, int] = Field(default_factory=dict)
     finding_summary: dict[str, int] = Field(default_factory=dict)
 
